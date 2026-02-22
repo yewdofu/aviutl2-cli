@@ -1,0 +1,27 @@
+---
+source: src/commands/init.rs
+expression: template
+---
+#:schema ./.aviutl2-cli/aviutl2.schema.json
+# 設定ファイルについては https://github.com/sevenc-nanashi/aviutl2-cli を参照してください。
+[project]
+name = "My Plugin"
+version = "0.1.0"
+
+[development]
+aviutl2_version = "latest"
+
+[artifacts.English-my_plugin-aul2]
+destination = "English.my_plugin.aul2"
+source = "./i18n/English.my_plugin.aul2"
+
+[artifacts.my_plugin-auf2]
+destination = "Plugin/my_plugin.auf2"
+
+[artifacts.my_plugin-auf2.profiles.debug]
+build = ["cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug", "cmake --build build --config Debug"]
+source = "build/Debug/my_plugin.dll"
+
+[artifacts.my_plugin-auf2.profiles.release]
+build = ["cmake -S . -B build -DCMAKE_BUILD_TYPE=Release", "cmake --build build --config Release"]
+source = "build/Release/my_plugin.dll"

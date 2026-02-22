@@ -93,7 +93,7 @@ install_dir = "devdir"
 }
 
 #[test]
-fn e2e_catalog_writes_catalog_json() -> Result<(), Box<dyn std::error::Error>> {
+fn e2e_release_writes_catalog_json() -> Result<(), Box<dyn std::error::Error>> {
     let temp = tempdir()?;
     let project_dir = temp.path().join("catalog_project");
     fs::create_dir_all(&project_dir)?;
@@ -125,22 +125,24 @@ homepage = "https://example.com"
 description = "desc"
 
 [catalog.license]
-type = "cc0"
+type = "CC0-1.0"
 
 [catalog.download_source]
 type = "github"
 owner = "sevenc-nanashi"
 repo = "aviutl2-cli"
+
+[release]
 "#,
     )?;
 
     Command::new(assert_cmd::cargo::cargo_bin!("au2"))
         .current_dir(&project_dir)
-        .arg("catalog")
+        .arg("release")
         .assert()
         .success();
 
-    let catalog_json_path = project_dir.join(".aviutl2-cli").join("catalog.json");
+    let catalog_json_path = project_dir.join("release").join("catalog.json");
     assert!(catalog_json_path.exists());
     let content = fs::read_to_string(&catalog_json_path)?;
     let json: serde_json::Value = serde_json::from_str(&content)?;
@@ -159,7 +161,7 @@ repo = "aviutl2-cli"
     assert_eq!(json[0]["version"][0]["version"], "1.2.3");
     assert_eq!(
         json[0]["version"][0]["file"][0]["path"],
-        "Plugin/plugin.auf"
+        "{pluginsDir}/plugin.auf"
     );
     assert!(
         json[0]["version"][0]["file"][0]["XXH3_128"]
