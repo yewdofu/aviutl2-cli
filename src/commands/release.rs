@@ -13,7 +13,15 @@ pub fn run(profile: Option<String>, set_version: Option<String>) -> Result<()> {
     if let Some(version) = set_version {
         config.project.version = version;
     }
-    let release = config.release.as_ref().context("release 設定が必要です")?;
+    let release = config.release.as_ref().unwrap_or(&config::Release {
+        profile: None,
+        include: None,
+        package_template: None,
+        zip_name: None,
+        output_dir: None,
+        prebuild: None,
+        postbuild: None,
+    });
     let profile = profile
         .or_else(|| release.profile.clone())
         .unwrap_or_else(|| "release".to_string());
