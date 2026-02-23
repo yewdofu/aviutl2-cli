@@ -33,8 +33,13 @@ pub fn run(
     let mut artifacts =
         super::develop::resolve_artifacts(&config, Some(&profile), include, refresh)?;
     artifacts.retain(|artifact| &artifact.destination != "preview.txt");
-    let stage_dir =
-        super::release::build_release_stage_from_artifacts(artifacts, None, &config.project)?;
+    let stage_dir = super::release::build_release_stage_from_artifacts(
+        artifacts,
+        None,
+        None,
+        None,
+        &config.project,
+    )?;
     let data_dir = find_aviutl2_data_dir(&install_dir)?;
     copy_dir_contents(&stage_dir, &data_dir, true)?;
     log::info!("プレビュー用に成果物を配置しました");

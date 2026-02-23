@@ -8,12 +8,16 @@ use crate::{
     util::{copy_to_destination, create_zip, fill_template, release_stage_dir},
 };
 
+const DEFAULT_ZIP_NAME: &str = "{name}-v{version}";
+
 pub fn run(profile: Option<String>, set_version: Option<String>) -> Result<()> {
     let mut config = load_config()?;
     if let Some(version) = set_version {
         config.project.version = version;
     }
     let release = config.release.as_ref().unwrap_or(&config::Release {
+        package_id: None,
+        package_name: None,
         profile: None,
         include: None,
         package_template: None,
@@ -22,24 +26,29 @@ pub fn run(profile: Option<String>, set_version: Option<String>) -> Result<()> {
         prebuild: None,
         postbuild: None,
     });
+
     let profile = profile
         .or_else(|| release.profile.clone())
         .unwrap_or_else(|| "release".to_string());
     let output_dir = PathBuf::from(release.output_dir.as_deref().unwrap_or("release"));
     fs::create_dir_all(&output_dir)?;
+
     super::develop::run_optional_commands(release.prebuild.as_ref(), config.build_group.as_ref())?;
+
     let stage_dir = build_release_stage(
         &config,
         &profile,
         release.include.as_deref(),
         release.package_template.as_deref(),
+        release.package_id.as_deref(),
+        release.package_name.as_deref(),
         false,
     )?;
 
     let zip_base = release
         .zip_name
         .clone()
-        .unwrap_or_else(|| "{name}-v{version}".to_string());
+        .unwrap_or_else(|| DEFAULT_ZIP_NAME.to_string());
     let zip_name = fill_template(&zip_base, &config.project);
     let zip_file_name = if zip_name.ends_with(".au2pkg.zip") {
         zip_name
@@ -79,15 +88,25 @@ pub(crate) fn build_release_stage(
     profile: &str,
     include: Option<&[String]>,
     package_template: Option<&str>,
+    package_id: Option<&str>,
+    package_name: Option<&str>,
     refresh: bool,
 ) -> Result<PathBuf> {
     let artifacts = super::develop::resolve_artifacts(config, Some(profile), include, refresh)?;
-    build_release_stage_from_artifacts(artifacts, package_template, &config.project)
+    build_release_stage_from_artifacts(
+        artifacts,
+        package_template,
+        package_id,
+        package_name,
+        &config.project,
+    )
 }
 
 pub(crate) fn build_release_stage_from_artifacts(
     artifacts: Vec<super::develop::ResolvedArtifact>,
     package_template: Option<&str>,
+    package_id: Option<&str>,
+    package_name: Option<&str>,
     project: &crate::config::Project,
 ) -> Result<PathBuf> {
     let stage_dir = release_stage_dir()?;
@@ -121,6 +140,28 @@ pub(crate) fn build_release_stage_from_artifacts(
             format!("package.txt の書き込みに失敗しました: {}", target.display())
         })?;
     }
+
+    let package_ini_path = stage_dir.join("package.ini");
+    let id = package_id.unwrap_or("{id}");
+    let name = package_name.unwrap_or("{name} v{version}");
+    let package_ini = format!(
+        dedent::dedent!(
+            r#"
+            [package]
+            id={id}
+            name={name}
+            "#
+        ),
+        id = fill_template(id, project),
+        name = fill_template(name, project),
+    );
+    fs::write(&package_ini_path, package_ini).with_context(|| {
+        format!(
+            "package.ini の書き込みに失敗しました: {}",
+            package_ini_path.display()
+        )
+    })?;
+
     Ok(stage_dir)
 }
 
@@ -401,20 +442,25 @@ fn map_source(
 }
 
 fn generate_au2pkg_pattern(project: &crate::config::Project, zip_base: Option<&str>) -> String {
-    let zip_base = zip_base.unwrap_or("{name}-v{version}");
+    let zip_base = zip_base.unwrap_or(DEFAULT_ZIP_NAME);
     let zip_name_template = if zip_base.ends_with(".au2pkg.zip") {
         zip_base.to_string()
     } else {
         format!("{zip_base}.au2pkg.zip")
     };
 
+    let id_token = "__AU2_ID_TOKEN__";
     let name_token = "__AU2_NAME_TOKEN__";
     let version_token = "__AU2_VERSION_TOKEN__";
     let tokenized = zip_name_template
+        .replace("{id}", id_token)
         .replace("{name}", name_token)
         .replace("{version}", version_token);
     let mut escaped = regex_escape(&tokenized);
-    escaped = escaped.replace(name_token, &regex_escape(&project.name));
+    escaped = escaped.replace(
+        name_token,
+        &regex_escape(project.name.as_ref().unwrap_or(&project.id)),
+    );
     escaped = escaped.replace(version_token, "[^/]+");
     format!("^{escaped}$")
 }

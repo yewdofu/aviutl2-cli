@@ -31,6 +31,9 @@ model Config {
 }
 
 model Project {
+  /** プロジェクトID */
+  id: string;
+
   /** プロジェクト名 */
   name: string;
 
@@ -129,7 +132,13 @@ model Release {
   /** package.txt のテンプレート */
   package_template?: string;
 
-  /** zip の名前（`.au2pkg.zip` は自動付与） */
+  /** au2pkgでのID（package.ini の `id` に相当、デフォルトは `{id}`） */
+  package_id?: string;
+
+  /** au2pkgでのパッケージ名（package.ini の `name` に相当、デフォルトは `{name} v{version}`） */
+  package_name?: string;
+
+  /** zip の名前（`.au2pkg.zip` は自動付与、デフォルトは `{id}-v{version}.au2pkg.zip`） */
   zip_name?: string;
 
   /** 使うプロファイル名（デフォルトは release） */

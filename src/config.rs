@@ -17,7 +17,8 @@ pub struct Config {
 
 #[derive(Deserialize)]
 pub struct Project {
-    pub name: String,
+    pub id: String,
+    pub name: Option<String>,
     pub version: String,
 }
 
@@ -81,6 +82,8 @@ pub struct Preview {
 pub struct Release {
     pub output_dir: Option<String>,
     pub package_template: Option<String>,
+    pub package_id: Option<String>,
+    pub package_name: Option<String>,
     pub zip_name: Option<String>,
     pub profile: Option<String>,
     pub include: Option<Vec<String>>,

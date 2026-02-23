@@ -5,6 +5,7 @@ use strum::IntoEnumIterator;
 
 #[derive(Debug, Clone)]
 struct InitConfig {
+    project_id: String,
     project_name: String,
     project_type: ProjectType,
     i18n: bool,
@@ -77,13 +78,14 @@ pub fn run() -> Result<()> {
     let init_config = if dialoguer::console::user_attended() {
         ask_init_config(&current_dir)?
     } else {
-        let project_name = slugify(
-            current_dir
-                .file_name()
-                .and_then(|n| n.to_str())
-                .unwrap_or("my_aviutl2_project"),
-        );
+        let project_name = current_dir
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("my_aviutl2_project")
+            .to_string();
+        let project_id = slugify(&project_name);
         InitConfig {
+            project_id,
             project_name,
             project_type: ProjectType::PluginCpp {
                 plugin_type: PluginType::Common,
@@ -109,14 +111,17 @@ pub fn run() -> Result<()> {
 }
 
 fn ask_init_config(current_dir: &std::path::Path) -> Result<InitConfig> {
+    let current_dir_name = current_dir
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("my_aviutl2_project");
     let project_name = dialoguer::Input::new()
         .with_prompt("プロジェクト名を入力してください")
-        .default(slugify(
-            current_dir
-                .file_name()
-                .and_then(|n| n.to_str())
-                .unwrap_or("my_aviutl2_project"),
-        ))
+        .default(current_dir_name.to_string())
+        .interact_text()?;
+    let project_id = dialoguer::Input::new()
+        .with_prompt("プロジェクトIDを入力してください")
+        .default(slugify(&project_name))
         .interact_text()?;
 
     let project_type = dialoguer::Select::new()
@@ -161,6 +166,7 @@ fn ask_init_config(current_dir: &std::path::Path) -> Result<InitConfig> {
         .interact()?;
 
     Ok(InitConfig {
+        project_id,
         project_name,
         project_type,
         i18n,
@@ -168,31 +174,33 @@ fn ask_init_config(current_dir: &std::path::Path) -> Result<InitConfig> {
 }
 
 fn init_template(config: &InitConfig) -> String {
-    let project_slug = slugify(&config.project_name);
     let mut template = format!(
         dedent::dedent!(
             r#"
             #:schema ./.aviutl2-cli/aviutl2.schema.json
             # 設定ファイルについては https://github.com/sevenc-nanashi/aviutl2-cli を参照してください。
             [project]
-            name = "{project_slug}"
+            id = "{project_id}"
+            name = "{project_name}"
             version = "0.1.0"
 
             [development]
             aviutl2_version = "latest"
             "#
         ),
-        project_slug = project_slug
+        project_id = config.project_id,
+        project_name = config.project_name
     );
+    template.push('\n');
 
     if config.i18n {
         template.push('\n');
         template.push_str(&format!(
             dedent::dedent!(
                 r#"
-                [artifacts.English-{project_slug}-aul2]
-                destination = "Language/English.{project_slug}.aul2"
-                source = "./i18n/English.{project_slug}.aul2"
+                [artifacts.English-{project_id}-aul2]
+                destination = "Language/English.{project_id}.aul2"
+                source = "./i18n/English.{project_id}.aul2"
 
                 [artifacts.English-aul2]
                 enabled = false
@@ -203,8 +211,9 @@ fn init_template(config: &InitConfig) -> String {
                 enabled = true
                 "#
             ),
-            project_slug = project_slug
+            project_id = config.project_id,
         ));
+        template.push('\n');
     }
     match config.project_type {
         ProjectType::PluginCpp { plugin_type } => {
@@ -213,21 +222,22 @@ fn init_template(config: &InitConfig) -> String {
             template.push_str(&format!(
                 dedent::dedent!(
                     r#"
-                    [artifacts.{project_slug}-{suffix}]
-                    destination = "Plugin/{project_slug}.{suffix}"
+                    [artifacts.{project_id}-{suffix}]
+                    destination = "Plugin/{project_id}.{suffix}"
 
-                    [artifacts.{project_slug}-{suffix}.profiles.debug]
+                    [artifacts.{project_id}-{suffix}.profiles.debug]
                     build = ["cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug", "cmake --build build --config Debug"]
-                    source = "build/Debug/{project_slug}.dll"
+                    source = "build/Debug/{project_id}.dll"
 
-                    [artifacts.{project_slug}-{suffix}.profiles.release]
+                    [artifacts.{project_id}-{suffix}.profiles.release]
                     build = ["cmake -S . -B build -DCMAKE_BUILD_TYPE=Release", "cmake --build build --config Release"]
-                    source = "build/Release/{project_slug}.dll"
+                    source = "build/Release/{project_id}.dll"
                     "#
                 ),
-                project_slug = project_slug,
+                project_id = config.project_id,
                 suffix = suffix
             ));
+            template.push('\n');
         }
         ProjectType::PluginRust { plugin_type } => {
             let suffix = plugin_type.suffix();
@@ -235,21 +245,22 @@ fn init_template(config: &InitConfig) -> String {
             template.push_str(&format!(
                 dedent::dedent!(
                     r#"
-                    [artifacts.{project_slug}-{suffix}]
-                    destination = "Plugin/{project_slug}.{suffix}"
+                    [artifacts.{project_id}-{suffix}]
+                    destination = "Plugin/{project_id}.{suffix}"
 
-                    [artifacts.{project_slug}-{suffix}.profiles.debug]
+                    [artifacts.{project_id}-{suffix}.profiles.debug]
                     build = "cargo build"
-                    source = "target/debug/{project_slug}.dll"
+                    source = "target/debug/{project_id}.dll"
 
-                    [artifacts.{project_slug}-{suffix}.profiles.release]
+                    [artifacts.{project_id}-{suffix}.profiles.release]
                     build = "cargo build --release"
-                    source = "target/release/{project_slug}.dll"
+                    source = "target/release/{project_id}.dll"
                     "#
                 ),
-                project_slug = project_slug,
+                project_id = config.project_id,
                 suffix = suffix
             ));
+            template.push('\n');
         }
         ProjectType::Script { script_type } => {
             let suffix = script_type.suffix();
@@ -262,9 +273,10 @@ fn init_template(config: &InitConfig) -> String {
                     source = "src/{project_slug}.lua"
                     "#
                 ),
-                project_slug = project_slug,
+                project_slug = config.project_id,
                 suffix = suffix
             ));
+            template.push('\n');
         }
     }
 
@@ -305,6 +317,7 @@ mod tests {
     #[test]
     fn test_init_template() {
         let config = InitConfig {
+            project_id: "my_plugin".to_string(),
             project_name: "My Plugin".to_string(),
             project_type: ProjectType::PluginCpp {
                 plugin_type: PluginType::Filter,

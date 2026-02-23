@@ -237,7 +237,8 @@ fn path_to_slash(path: &Path) -> String {
 
 pub fn fill_template(template: &str, project: &crate::config::Project) -> String {
     template
-        .replace("{name}", &project.name)
+        .replace("{id}", &project.id)
+        .replace("{name}", &project.name.as_ref().unwrap_or(&project.id))
         .replace("{version}", &project.version)
 }
 

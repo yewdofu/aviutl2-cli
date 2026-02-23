@@ -5,6 +5,7 @@ expression: template
 #:schema ./.aviutl2-cli/aviutl2.schema.json
 # 設定ファイルについては https://github.com/sevenc-nanashi/aviutl2-cli を参照してください。
 [project]
+id = "my_plugin"
 name = "My Plugin"
 version = "0.1.0"
 
@@ -12,8 +13,16 @@ version = "0.1.0"
 aviutl2_version = "latest"
 
 [artifacts.English-my_plugin-aul2]
-destination = "English.my_plugin.aul2"
+destination = "Language/English.my_plugin.aul2"
 source = "./i18n/English.my_plugin.aul2"
+
+[artifacts.English-aul2]
+enabled = false
+destination = "Language/English.aul2"
+source = "https://raw.githubusercontent.com/aviutl2/aviutl2_community_translation/refs/heads/main/locales/original_english.aul2"
+
+[artifacts.English-aul2.profiles.debug]
+enabled = true
 
 [artifacts.my_plugin-auf2]
 destination = "Plugin/my_plugin.auf2"

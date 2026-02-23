@@ -29,8 +29,10 @@ cargo install aviutl2-cli
 
 ```toml
 [project]
+# プロジェクトID
+id = "my-aviutl2-plugin"
 # プロジェクト名
-name = "MyAviUtlPlugin"
+name = "MyAviUtl2Plugin"
 # バージョン
 version = "0.1.0"
 
@@ -108,8 +110,12 @@ postbuild = "echo postbuild"
 output_dir = "release"
 # package.txtのテンプレートファイル（オプション）
 package_template = "package_template.txt"
+# package.iniでのID（デフォルトはプロジェクトID）
+package_id = "my-plugin"
+# package.iniでの名前（デフォルトは`{プロジェクト名} v{バージョン}`）
+package_name = "{name} v{version}"
 # zipの名前（`.au2pkg.zip`は自動で付与されます）
-zip_name = "{name}-v{version}"
+zip_name = "{id}-v{version}"
 # 使うプロファイル（デフォルトは`release`）
 profile = "release"
 # リリース用の事前/事後ビルドコマンド

@@ -57,6 +57,10 @@
     "Project": {
       "type": "object",
       "properties": {
+        "id": {
+          "type": "string",
+          "description": "プロジェクトID"
+        },
         "name": {
           "type": "string",
           "description": "プロジェクト名"
@@ -67,6 +71,7 @@
         }
       },
       "required": [
+        "id",
         "name",
         "version"
       ]
@@ -213,9 +218,17 @@
           "type": "string",
           "description": "package.txt のテンプレート"
         },
+        "package_id": {
+          "type": "string",
+          "description": "au2pkgでのID（package.ini の `id` に相当、デフォルトは `{id}`）"
+        },
+        "package_name": {
+          "type": "string",
+          "description": "au2pkgでのパッケージ名（package.ini の `name` に相当、デフォルトは `{name} v{version}`）"
+        },
         "zip_name": {
           "type": "string",
-          "description": "zip の名前（`.au2pkg.zip` は自動付与）"
+          "description": "zip の名前（`.au2pkg.zip` は自動付与、デフォルトは `{id}-v{version}.au2pkg.zip`）"
         },
         "profile": {
           "type": "string",
@@ -304,6 +317,10 @@
             {
               "type": "string",
               "const": "language"
+            },
+            {
+              "type": "string",
+              "const": "other"
             }
           ],
           "description": "種類"
