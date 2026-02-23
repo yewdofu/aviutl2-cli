@@ -8,7 +8,7 @@ use crate::{
     util::{copy_to_destination, create_zip, fill_template, release_stage_dir},
 };
 
-const DEFAULT_ZIP_NAME: &str = "{name}-v{version}";
+const DEFAULT_ZIP_NAME: &str = "{id}-v{version}";
 
 pub fn run(profile: Option<String>, set_version: Option<String>) -> Result<()> {
     let mut config = load_config()?;
