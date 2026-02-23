@@ -183,7 +183,7 @@ fn init_template(config: &InitConfig) -> String {
     if config.i18n {
         lines.push("".to_string());
         lines.push(format!("[artifacts.English-{project_slug}-aul2]"));
-        lines.push(format!("destination = \"English.{project_slug}.aul2\"",));
+        lines.push(format!("destination = \"Language/English.{project_slug}.aul2\"",));
         lines.push(format!("source = \"./i18n/English.{project_slug}.aul2\"",));
     }
     match config.project_type {
