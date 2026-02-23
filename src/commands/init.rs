@@ -213,6 +213,7 @@ fn init_template(config: &InitConfig) -> String {
                 enabled = true
                 "#
             ),
+            project_filename = project_filename
         ));
         template.push('\n');
     }
@@ -235,7 +236,8 @@ fn init_template(config: &InitConfig) -> String {
                     source = "build/Release/{project_filename}.dll"
                     "#
                 ),
-                suffix = suffix
+                suffix = suffix,
+                project_filename = project_filename
             ));
             template.push('\n');
         }
@@ -257,6 +259,7 @@ fn init_template(config: &InitConfig) -> String {
                     source = "target/release/{project_filename}.dll"
                     "#
                 ),
+                project_filename = project_filename,
                 suffix = suffix
             ));
             template.push('\n');
@@ -272,6 +275,7 @@ fn init_template(config: &InitConfig) -> String {
                     source = "src/{project_filename}.lua"
                     "#
                 ),
+                project_filename = project_filename,
                 suffix = suffix
             ));
             template.push('\n');
