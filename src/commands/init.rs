@@ -193,14 +193,16 @@ fn init_template(config: &InitConfig) -> String {
     );
     template.push('\n');
 
+    let project_filename = slugify(&config.project_id.split(".").last().unwrap());
+
     if config.i18n {
         template.push('\n');
         template.push_str(&format!(
             dedent::dedent!(
                 r#"
-                [artifacts.English-{project_id}-aul2]
-                destination = "Language/English.{project_id}.aul2"
-                source = "./i18n/English.{project_id}.aul2"
+                [artifacts.English-{project_filename}-aul2]
+                destination = "Language/English.{project_filename}.aul2"
+                source = "./i18n/English.{project_filename}.aul2"
 
                 [artifacts.English-aul2]
                 enabled = false
@@ -211,7 +213,6 @@ fn init_template(config: &InitConfig) -> String {
                 enabled = true
                 "#
             ),
-            project_id = config.project_id,
         ));
         template.push('\n');
     }
@@ -222,19 +223,18 @@ fn init_template(config: &InitConfig) -> String {
             template.push_str(&format!(
                 dedent::dedent!(
                     r#"
-                    [artifacts.{project_id}-{suffix}]
-                    destination = "Plugin/{project_id}.{suffix}"
+                    [artifacts.{project_filename}-{suffix}]
+                    destination = "Plugin/{project_filename}.{suffix}"
 
-                    [artifacts.{project_id}-{suffix}.profiles.debug]
+                    [artifacts.{project_filename}-{suffix}.profiles.debug]
                     build = ["cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug", "cmake --build build --config Debug"]
-                    source = "build/Debug/{project_id}.dll"
+                    source = "build/Debug/{project_filename}.dll"
 
-                    [artifacts.{project_id}-{suffix}.profiles.release]
+                    [artifacts.{project_filename}-{suffix}.profiles.release]
                     build = ["cmake -S . -B build -DCMAKE_BUILD_TYPE=Release", "cmake --build build --config Release"]
-                    source = "build/Release/{project_id}.dll"
+                    source = "build/Release/{project_filename}.dll"
                     "#
                 ),
-                project_id = config.project_id,
                 suffix = suffix
             ));
             template.push('\n');
@@ -245,19 +245,18 @@ fn init_template(config: &InitConfig) -> String {
             template.push_str(&format!(
                 dedent::dedent!(
                     r#"
-                    [artifacts.{project_id}-{suffix}]
-                    destination = "Plugin/{project_id}.{suffix}"
+                    [artifacts.{project_filename}-{suffix}]
+                    destination = "Plugin/{project_filename}.{suffix}"
 
-                    [artifacts.{project_id}-{suffix}.profiles.debug]
+                    [artifacts.{project_filename}-{suffix}.profiles.debug]
                     build = "cargo build"
-                    source = "target/debug/{project_id}.dll"
+                    source = "target/debug/{project_filename}.dll"
 
-                    [artifacts.{project_id}-{suffix}.profiles.release]
+                    [artifacts.{project_filename}-{suffix}.profiles.release]
                     build = "cargo build --release"
-                    source = "target/release/{project_id}.dll"
+                    source = "target/release/{project_filename}.dll"
                     "#
                 ),
-                project_id = config.project_id,
                 suffix = suffix
             ));
             template.push('\n');
@@ -268,12 +267,11 @@ fn init_template(config: &InitConfig) -> String {
             template.push_str(&format!(
                 dedent::dedent!(
                     r#"
-                    [artifacts.{project_slug}-{suffix}]
-                    destination = "Script/{project_slug}.{suffix}"
-                    source = "src/{project_slug}.lua"
+                    [artifacts.{project_filename}-{suffix}]
+                    destination = "Script/{project_filename}.{suffix}"
+                    source = "src/{project_filename}.lua"
                     "#
                 ),
-                project_slug = config.project_id,
                 suffix = suffix
             ));
             template.push('\n');
