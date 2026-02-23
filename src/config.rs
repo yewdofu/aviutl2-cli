@@ -161,7 +161,6 @@ impl Serialize for CatalogType {
     }
 }
 
-
 #[derive(Deserialize, Serialize, Clone, PartialEq)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum CatalogLicenseText {

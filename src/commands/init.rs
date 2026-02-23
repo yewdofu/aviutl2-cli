@@ -168,100 +168,107 @@ fn ask_init_config(current_dir: &std::path::Path) -> Result<InitConfig> {
 }
 
 fn init_template(config: &InitConfig) -> String {
-    let mut lines = Vec::new();
-    lines.push("#:schema ./.aviutl2-cli/aviutl2.schema.json".to_string());
-    lines.push("# 設定ファイルについては https://github.com/sevenc-nanashi/aviutl2-cli を参照してください。".to_string());
-    lines.push("[project]".to_string());
-    lines.push(format!("name = \"{}\"", slugify(&config.project_name)));
-    lines.push("version = \"0.1.0\"".to_string());
-    lines.push("".to_string());
-    lines.push("[development]".to_string());
-    lines.push("aviutl2_version = \"latest\"".to_string());
-
     let project_slug = slugify(&config.project_name);
+    let mut template = format!(
+        dedent::dedent!(
+            r#"
+            #:schema ./.aviutl2-cli/aviutl2.schema.json
+            # 設定ファイルについては https://github.com/sevenc-nanashi/aviutl2-cli を参照してください。
+            [project]
+            name = "{project_slug}"
+            version = "0.1.0"
+
+            [development]
+            aviutl2_version = "latest"
+            "#
+        ),
+        project_slug = project_slug
+    );
 
     if config.i18n {
-        lines.push("".to_string());
-        lines.push(format!("[artifacts.English-{project_slug}-aul2]"));
-        lines.push(format!("destination = \"Language/English.{project_slug}.aul2\"",));
-        lines.push(format!("source = \"./i18n/English.{project_slug}.aul2\"",));
+        template.push('\n');
+        template.push_str(&format!(
+            dedent::dedent!(
+                r#"
+                [artifacts.English-{project_slug}-aul2]
+                destination = "Language/English.{project_slug}.aul2"
+                source = "./i18n/English.{project_slug}.aul2"
+
+                [artifacts.English-aul2]
+                enabled = false
+                destination = "Language/English.aul2"
+                source = "https://raw.githubusercontent.com/aviutl2/aviutl2_community_translation/refs/heads/main/locales/original_english.aul2"
+
+                [artifacts.English-aul2.profiles.debug]
+                enabled = true
+                "#
+            ),
+            project_slug = project_slug
+        ));
     }
     match config.project_type {
         ProjectType::PluginCpp { plugin_type } => {
-            lines.push("".to_string());
-            lines.push(format!(
-                "[artifacts.{}-{}]",
-                project_slug,
-                plugin_type.suffix()
+            let suffix = plugin_type.suffix();
+            template.push('\n');
+            template.push_str(&format!(
+                dedent::dedent!(
+                    r#"
+                    [artifacts.{project_slug}-{suffix}]
+                    destination = "Plugin/{project_slug}.{suffix}"
+
+                    [artifacts.{project_slug}-{suffix}.profiles.debug]
+                    build = ["cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug", "cmake --build build --config Debug"]
+                    source = "build/Debug/{project_slug}.dll"
+
+                    [artifacts.{project_slug}-{suffix}.profiles.release]
+                    build = ["cmake -S . -B build -DCMAKE_BUILD_TYPE=Release", "cmake --build build --config Release"]
+                    source = "build/Release/{project_slug}.dll"
+                    "#
+                ),
+                project_slug = project_slug,
+                suffix = suffix
             ));
-            lines.push(format!(
-                "destination = \"Plugin/{}.{}\"",
-                project_slug,
-                plugin_type.suffix()
-            ));
-            lines.push("".to_string());
-            lines.push(format!(
-                "[artifacts.{}-{}.profiles.debug]",
-                project_slug,
-                plugin_type.suffix()
-            ));
-            lines.push("build = [\"cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug\", \"cmake --build build --config Debug\"]".to_string());
-            lines.push(format!("source = \"build/Debug/{}.dll\"", project_slug));
-            lines.push("".to_string());
-            lines.push(format!(
-                "[artifacts.{}-{}.profiles.release]",
-                project_slug,
-                plugin_type.suffix()
-            ));
-            lines.push("build = [\"cmake -S . -B build -DCMAKE_BUILD_TYPE=Release\", \"cmake --build build --config Release\"]".to_string());
-            lines.push(format!("source = \"build/Release/{}.dll\"", project_slug));
         }
         ProjectType::PluginRust { plugin_type } => {
-            lines.push("".to_string());
-            lines.push(format!(
-                "[artifacts.{}-{}]",
-                project_slug,
-                plugin_type.suffix()
+            let suffix = plugin_type.suffix();
+            template.push('\n');
+            template.push_str(&format!(
+                dedent::dedent!(
+                    r#"
+                    [artifacts.{project_slug}-{suffix}]
+                    destination = "Plugin/{project_slug}.{suffix}"
+
+                    [artifacts.{project_slug}-{suffix}.profiles.debug]
+                    build = "cargo build"
+                    source = "target/debug/{project_slug}.dll"
+
+                    [artifacts.{project_slug}-{suffix}.profiles.release]
+                    build = "cargo build --release"
+                    source = "target/release/{project_slug}.dll"
+                    "#
+                ),
+                project_slug = project_slug,
+                suffix = suffix
             ));
-            lines.push(format!(
-                "destination = \"Plugin/{}.{}\"",
-                project_slug,
-                plugin_type.suffix()
-            ));
-            lines.push("".to_string());
-            lines.push(format!(
-                "[artifacts.{}-{}.profiles.debug]",
-                project_slug,
-                plugin_type.suffix()
-            ));
-            lines.push("build = \"cargo build\"".to_string());
-            lines.push(format!("source = \"target/debug/{}.dll\"", project_slug));
-            lines.push("".to_string());
-            lines.push(format!(
-                "[artifacts.{}-{}.profiles.release]",
-                project_slug,
-                plugin_type.suffix()
-            ));
-            lines.push("build = \"cargo build --release\"".to_string());
-            lines.push(format!("source = \"target/release/{}.dll\"", project_slug));
         }
         ProjectType::Script { script_type } => {
-            lines.push("".to_string());
-            lines.push(format!(
-                "[artifacts.{}-{}]",
-                project_slug,
-                script_type.suffix()
+            let suffix = script_type.suffix();
+            template.push('\n');
+            template.push_str(&format!(
+                dedent::dedent!(
+                    r#"
+                    [artifacts.{project_slug}-{suffix}]
+                    destination = "Script/{project_slug}.{suffix}"
+                    source = "src/{project_slug}.lua"
+                    "#
+                ),
+                project_slug = project_slug,
+                suffix = suffix
             ));
-            lines.push(format!(
-                "destination = \"Script/{}.{}\"",
-                project_slug,
-                script_type.suffix()
-            ));
-            lines.push(format!("source = \"src/{}.lua\"", project_slug));
         }
     }
 
-    lines.join("\n")
+    template.trim_end_matches('\n').to_string()
 }
 
 fn slugify(s: &str) -> String {
