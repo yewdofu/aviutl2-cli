@@ -162,7 +162,7 @@ fn ask_init_config(current_dir: &std::path::Path) -> Result<InitConfig> {
     };
 
     let i18n = dialoguer::Confirm::new()
-        .with_prompt(format!("English.{project_name}.aul2 を使用しますか？"))
+        .with_prompt("英語対応を追加しますか？")
         .interact()?;
 
     Ok(InitConfig {
