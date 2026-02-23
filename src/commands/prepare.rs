@@ -27,6 +27,7 @@ pub fn aviutl2() -> Result<()> {
 pub fn aviutl2_in(install_dir: &PathBuf, aviutl2_version: &str) -> Result<()> {
     fs::create_dir_all(install_dir)
         .with_context(|| format!("ディレクトリ作成に失敗しました: {}", install_dir.display()))?;
+    let aviutl2_version = resolve_version(aviutl2_version)?;
     if let Ok(current_version) = fs::read_to_string(install_dir.join(".aviutl2-version"))
         && current_version == aviutl2_version
     {
@@ -34,7 +35,7 @@ pub fn aviutl2_in(install_dir: &PathBuf, aviutl2_version: &str) -> Result<()> {
         return Ok(());
     }
 
-    let zip_path = download_aviutl2_zip(aviutl2_version)?;
+    let zip_path = download_aviutl2_zip(&aviutl2_version)?;
     extract_zip(&zip_path, install_dir)?;
     fs::remove_file(&zip_path).ok();
     log::info!("AviUtl2 を展開しました: {}", install_dir.display());
@@ -130,6 +131,40 @@ pub fn load_prepare_snapshot() -> Result<Option<PrepareSnapshot>> {
     let content = fs::read_to_string(snapshot_path)?;
     let snapshot = serde_json::from_str(&content)?;
     Ok(Some(snapshot))
+}
+
+fn resolve_version(version: &str) -> Result<String> {
+    #[derive(serde::Deserialize)]
+    struct VersionResponse {
+        version: String,
+    }
+
+    let mut url = String::from(API_BASE);
+    url.push_str(&format!("/versions/{}", version));
+    let agent: ureq::Agent = ureq::Agent::config_builder()
+        .max_redirects(5)
+        .build()
+        .into();
+    let mut response = agent
+        .get(&url)
+        .header("User-Agent", "aviutl2-cli")
+        .call()
+        .with_context(|| format!("AviUtl2 のバージョン情報の取得に失敗しました: {}", version))?;
+    let status = response.status();
+    if !status.is_success() {
+        bail!(
+            "AviUtl2 のバージョン情報の取得に失敗しました: {} (HTTP {})",
+            version,
+            status
+        );
+    }
+
+    let version_info: VersionResponse = response
+        .body_mut()
+        .read_json()
+        .with_context(|| "AviUtl2 のバージョン情報の解析に失敗しました")?;
+
+    Ok(version_info.version)
 }
 
 fn download_aviutl2_zip(version: &str) -> Result<PathBuf> {
