@@ -225,6 +225,7 @@ fn build_versions(
 }
 
 fn collect_version_files(stage_dir: &std::path::Path) -> Result<Vec<catalog_schema::VersionFile>> {
+    static EXCLUDED_FILES: &[&str] = &["package.txt", "package.ini"];
     let mut files = Vec::new();
     for entry in walkdir::WalkDir::new(stage_dir)
         .into_iter()
@@ -234,7 +235,11 @@ fn collect_version_files(stage_dir: &std::path::Path) -> Result<Vec<catalog_sche
         if !entry.file_type().is_file() {
             continue;
         }
-        if path.file_name().and_then(|n| n.to_str()) == Some("package.txt") {
+        if path
+            .file_name()
+            .and_then(|name| name.to_str())
+            .is_some_and(|name| EXCLUDED_FILES.contains(&name))
+        {
             continue;
         }
         let relative_path = path
