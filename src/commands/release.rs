@@ -457,6 +457,7 @@ fn generate_au2pkg_pattern(project: &crate::config::Project, zip_base: Option<&s
         .replace("{name}", name_token)
         .replace("{version}", version_token);
     let mut escaped = regex_escape(&tokenized);
+    escaped = escaped.replace(id_token, &regex_escape(&project.id));
     escaped = escaped.replace(
         name_token,
         &regex_escape(project.name.as_ref().unwrap_or(&project.id)),
