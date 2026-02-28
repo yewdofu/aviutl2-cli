@@ -12,7 +12,7 @@ model Config {
   project: Project;
 
   /** 成果物の定義 */
-  artifacts: Record<Artifact>;
+  artifacts?: Record<Artifact>;
 
   /** ビルドコマンドのグループ定義 */
   build_group?: Record<BuildCommand>;
@@ -135,8 +135,11 @@ model Release {
   /** au2pkgでのID（package.ini の `id` に相当、デフォルトは `{id}`） */
   package_id?: string;
 
-  /** au2pkgでのパッケージ名（package.ini の `name` に相当、デフォルトは `{name} v{version}`） */
+  /** au2pkgでのパッケージ名（package.ini の `name` に相当、デフォルトは `{name}`） */
   package_name?: string;
+
+  /** au2pkgでの情報欄（package.ini の `information` に相当、デフォルトは `{name} v{version}`） */
+  package_information?: string;
 
   /** zip の名前（`.au2pkg.zip` は自動付与、デフォルトは `{id}-v{version}.au2pkg.zip`） */
   zip_name?: string;

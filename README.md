@@ -110,10 +110,12 @@ postbuild = "echo postbuild"
 output_dir = "release"
 # package.txtのテンプレートファイル（オプション）
 package_template = "package_template.txt"
-# package.iniでのID（デフォルトはプロジェクトID）
+# package.iniでのID（デフォルトは`{id}`）
 package_id = "my-plugin"
-# package.iniでの名前（デフォルトは`{プロジェクト名} v{バージョン}`）
-package_name = "{name} v{version}"
+# package.iniでの名前（デフォルトは`{name}`）
+package_name = "My Plugin"
+# package.iniでの情報欄（デフォルトは`{name} v{version}`）
+package_information = "{name} v{version}"
 # zipの名前（`.au2pkg.zip`は自動で付与されます）
 zip_name = "{id}-v{version}"
 # 使うプロファイル（デフォルトは`release`）

@@ -18,6 +18,7 @@ pub fn run(profile: Option<String>, set_version: Option<String>) -> Result<()> {
     let release = config.release.as_ref().unwrap_or(&config::Release {
         package_id: None,
         package_name: None,
+        package_information: None,
         profile: None,
         include: None,
         package_template: None,
@@ -33,15 +34,13 @@ pub fn run(profile: Option<String>, set_version: Option<String>) -> Result<()> {
     let output_dir = PathBuf::from(release.output_dir.as_deref().unwrap_or("release"));
     fs::create_dir_all(&output_dir)?;
 
-    super::develop::run_optional_commands(release.prebuild.as_ref(), config.build_group.as_ref())?;
+    super::develop::run_optional_commands(release.prebuild.as_ref(), &config.build_group)?;
 
     let stage_dir = build_release_stage(
         &config,
         &profile,
         release.include.as_deref(),
-        release.package_template.as_deref(),
-        release.package_id.as_deref(),
-        release.package_name.as_deref(),
+        Some(release),
         false,
     )?;
 
@@ -58,7 +57,7 @@ pub fn run(profile: Option<String>, set_version: Option<String>) -> Result<()> {
     let zip_path = output_dir.join(zip_file_name);
     create_zip(&stage_dir, &zip_path)?;
     log::info!("リリースパッケージを作成しました: {}", zip_path.display());
-    super::develop::run_optional_commands(release.postbuild.as_ref(), config.build_group.as_ref())?;
+    super::develop::run_optional_commands(release.postbuild.as_ref(), &config.build_group)?;
 
     if let Some(catalog_config) = &config.catalog {
         log::warn!(
@@ -87,26 +86,16 @@ pub(crate) fn build_release_stage(
     config: &Config,
     profile: &str,
     include: Option<&[String]>,
-    package_template: Option<&str>,
-    package_id: Option<&str>,
-    package_name: Option<&str>,
+    release_config: Option<&crate::config::Release>,
     refresh: bool,
 ) -> Result<PathBuf> {
     let artifacts = super::develop::resolve_artifacts(config, Some(profile), include, refresh)?;
-    build_release_stage_from_artifacts(
-        artifacts,
-        package_template,
-        package_id,
-        package_name,
-        &config.project,
-    )
+    build_release_stage_from_artifacts(artifacts, release_config, &config.project)
 }
 
 pub(crate) fn build_release_stage_from_artifacts(
     artifacts: Vec<super::develop::ResolvedArtifact>,
-    package_template: Option<&str>,
-    package_id: Option<&str>,
-    package_name: Option<&str>,
+    release_config: Option<&crate::config::Release>,
     project: &crate::config::Project,
 ) -> Result<PathBuf> {
     let stage_dir = release_stage_dir()?;
@@ -125,7 +114,7 @@ pub(crate) fn build_release_stage_from_artifacts(
         )?;
     }
 
-    if let Some(template) = package_template {
+    if let Some(template) = &release_config.and_then(|r| r.package_template.as_ref()) {
         let template_path = PathBuf::from(template);
         let target = stage_dir.join("package.txt");
         let content = fs::read_to_string(&template_path).with_context(|| {
@@ -142,18 +131,27 @@ pub(crate) fn build_release_stage_from_artifacts(
     }
 
     let package_ini_path = stage_dir.join("package.ini");
-    let id = package_id.unwrap_or("{id}");
-    let name = package_name.unwrap_or("{name} v{version}");
+    let id = release_config
+        .and_then(|r| r.package_id.as_deref())
+        .unwrap_or("{id}");
+    let name = release_config
+        .and_then(|r| r.package_name.as_deref())
+        .unwrap_or("{name}");
+    let information = release_config
+        .and_then(|r| r.package_information.as_deref())
+        .unwrap_or("{name} v{version}");
     let package_ini = format!(
         dedent::dedent!(
             r#"
             [package]
             id={id}
             name={name}
+            information={information}
             "#
         ),
         id = fill_template(id, project),
         name = fill_template(name, project),
+        information = fill_template(information, project)
     );
     fs::write(&package_ini_path, package_ini).with_context(|| {
         format!(

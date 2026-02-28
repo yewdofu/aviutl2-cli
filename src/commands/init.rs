@@ -16,6 +16,7 @@ enum ProjectType {
     PluginCpp { plugin_type: PluginType },
     PluginRust { plugin_type: PluginType },
     Script { script_type: ScriptType },
+    None,
 }
 
 #[derive(Debug, Clone, Copy, strum::EnumString, strum::Display, strum::EnumIter)]
@@ -126,7 +127,12 @@ fn ask_init_config(current_dir: &std::path::Path) -> Result<InitConfig> {
 
     let project_type = dialoguer::Select::new()
         .with_prompt("プロジェクトの種類を選択してください")
-        .items(["プラグイン（C++）", "プラグイン（Rust）", "スクリプト"])
+        .items([
+            "プラグイン（C++）",
+            "プラグイン（Rust）",
+            "スクリプト",
+            "テンプレートなし",
+        ])
         .interact()?;
 
     let project_type = match project_type {
@@ -158,12 +164,14 @@ fn ask_init_config(current_dir: &std::path::Path) -> Result<InitConfig> {
             let script_type = ScriptType::iter().nth(script_type).unwrap();
             ProjectType::Script { script_type }
         }
+        3 => ProjectType::None,
         _ => unreachable!(),
     };
 
-    let i18n = dialoguer::Confirm::new()
-        .with_prompt("英語対応を追加しますか？")
-        .interact()?;
+    let i18n = !matches!(project_type, ProjectType::None)
+        && dialoguer::Confirm::new()
+            .with_prompt("英語対応を追加しますか？")
+            .interact()?;
 
     Ok(InitConfig {
         project_id,
@@ -280,6 +288,7 @@ fn init_template(config: &InitConfig) -> String {
             ));
             template.push('\n');
         }
+        ProjectType::None => {}
     }
 
     template.trim_end_matches('\n').to_string()

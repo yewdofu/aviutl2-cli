@@ -7,8 +7,10 @@ use std::path::PathBuf;
 #[derive(Deserialize)]
 pub struct Config {
     pub project: Project,
+    #[serde(default)]
     pub artifacts: HashMap<String, Artifact>,
-    pub build_group: Option<HashMap<String, BuildCommand>>,
+    #[serde(default)]
+    pub build_group: HashMap<String, BuildCommand>,
     pub development: Option<Development>,
     pub preview: Option<Preview>,
     pub release: Option<Release>,
@@ -84,6 +86,7 @@ pub struct Release {
     pub package_template: Option<String>,
     pub package_id: Option<String>,
     pub package_name: Option<String>,
+    pub package_information: Option<String>,
     pub zip_name: Option<String>,
     pub profile: Option<String>,
     pub include: Option<Vec<String>>,

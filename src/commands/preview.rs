@@ -29,21 +29,16 @@ pub fn run(
         .or_else(|| release.profile.clone())
         .unwrap_or_else(|| "release".to_string());
     let include = preview.include.as_deref().or(release.include.as_deref());
-    super::develop::run_optional_commands(preview.prebuild.as_ref(), config.build_group.as_ref())?;
+    super::develop::run_optional_commands(preview.prebuild.as_ref(), &config.build_group)?;
     let mut artifacts =
         super::develop::resolve_artifacts(&config, Some(&profile), include, refresh)?;
     artifacts.retain(|artifact| &artifact.destination != "preview.txt");
-    let stage_dir = super::release::build_release_stage_from_artifacts(
-        artifacts,
-        None,
-        None,
-        None,
-        &config.project,
-    )?;
+    let stage_dir =
+        super::release::build_release_stage_from_artifacts(artifacts, None, &config.project)?;
     let data_dir = find_aviutl2_data_dir(&install_dir)?;
     copy_dir_contents(&stage_dir, &data_dir, true)?;
     log::info!("プレビュー用に成果物を配置しました");
-    super::develop::run_optional_commands(preview.postbuild.as_ref(), config.build_group.as_ref())?;
+    super::develop::run_optional_commands(preview.postbuild.as_ref(), &config.build_group)?;
 
     if !skip_start {
         let aviutl_exe = data_dir.parent().unwrap_or(&data_dir).join("aviutl2.exe");

@@ -36,7 +36,7 @@ pub fn run(
         .as_deref()
         .or(dev.profile.as_deref())
         .unwrap_or("debug");
-    run_optional_commands(dev.prebuild.as_ref(), config.build_group.as_ref())?;
+    run_optional_commands(dev.prebuild.as_ref(), &config.build_group)?;
     let artifacts = resolve_artifacts(&config, Some(profile), None, refresh)?;
     let data_dir = find_aviutl2_data_dir(&install_dir)?;
     let mut anything_copied = false;
@@ -53,7 +53,7 @@ pub fn run(
     if anything_copied {
         log::info!("成果物を配置しました");
     }
-    run_optional_commands(dev.postbuild.as_ref(), config.build_group.as_ref())?;
+    run_optional_commands(dev.postbuild.as_ref(), &config.build_group)?;
 
     if !skip_start {
         let aviutl_exe = data_dir.parent().unwrap_or(&data_dir).join("aviutl2.exe");
@@ -126,7 +126,7 @@ pub fn resolve_artifacts(
         let build = profile_data
             .and_then(|p| p.build.clone())
             .or_else(|| artifact.build.clone());
-        let build_plan = resolve_build_plan(build.as_ref(), config.build_group.as_ref())?;
+        let build_plan = resolve_build_plan(build.as_ref(), &config.build_group)?;
         let placement_method = artifact
             .placement_method
             .unwrap_or(PlacementMethod::Symlink);
@@ -165,7 +165,7 @@ pub fn run_build_commands(commands: &[String]) -> Result<()> {
 
 pub(crate) fn run_optional_commands(
     commands: Option<&BuildCommand>,
-    build_groups: Option<&std::collections::HashMap<String, BuildCommand>>,
+    build_groups: &std::collections::HashMap<String, BuildCommand>,
 ) -> Result<()> {
     let commands = resolve_build_commands(commands, build_groups)?;
     if !commands.is_empty() {
@@ -176,7 +176,7 @@ pub(crate) fn run_optional_commands(
 
 fn resolve_build_commands(
     command: Option<&BuildCommand>,
-    build_groups: Option<&std::collections::HashMap<String, BuildCommand>>,
+    build_groups: &std::collections::HashMap<String, BuildCommand>,
 ) -> Result<Vec<String>> {
     let mut visiting = std::collections::HashSet::new();
     resolve_build_commands_inner(command, build_groups, &mut visiting)
@@ -184,7 +184,7 @@ fn resolve_build_commands(
 
 fn resolve_build_plan(
     command: Option<&BuildCommand>,
-    build_groups: Option<&std::collections::HashMap<String, BuildCommand>>,
+    build_groups: &std::collections::HashMap<String, BuildCommand>,
 ) -> Result<ResolvedBuild> {
     let commands = resolve_build_commands(command, build_groups)?;
     let group = match command {
@@ -196,7 +196,7 @@ fn resolve_build_plan(
 
 fn resolve_build_commands_inner(
     command: Option<&BuildCommand>,
-    build_groups: Option<&std::collections::HashMap<String, BuildCommand>>,
+    build_groups: &std::collections::HashMap<String, BuildCommand>,
     visiting: &mut std::collections::HashSet<String>,
 ) -> Result<Vec<String>> {
     match command {
@@ -204,7 +204,6 @@ fn resolve_build_commands_inner(
         Some(BuildCommand::Single(cmd)) => Ok(vec![cmd.clone()]),
         Some(BuildCommand::Multiple(cmds)) => Ok(cmds.clone()),
         Some(BuildCommand::Group(group_ref)) => {
-            let build_groups = build_groups.context("build_group が定義されていません")?;
             let name = &group_ref.group;
             let group = build_groups
                 .get(name)
@@ -212,7 +211,7 @@ fn resolve_build_commands_inner(
             if !visiting.insert(name.clone()) {
                 bail!("build_group の循環参照を検出しました: {}", name);
             }
-            let resolved = resolve_build_commands_inner(Some(group), Some(build_groups), visiting);
+            let resolved = resolve_build_commands_inner(Some(group), build_groups, visiting);
             visiting.remove(name);
             resolved
         }

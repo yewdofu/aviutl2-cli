@@ -50,8 +50,7 @@
     }
   },
   "required": [
-    "project",
-    "artifacts"
+    "project"
   ],
   "$defs": {
     "Project": {
@@ -224,7 +223,11 @@
         },
         "package_name": {
           "type": "string",
-          "description": "au2pkgでのパッケージ名（package.ini の `name` に相当、デフォルトは `{name} v{version}`）"
+          "description": "au2pkgでのパッケージ名（package.ini の `name` に相当、デフォルトは `{name}`）"
+        },
+        "package_information": {
+          "type": "string",
+          "description": "au2pkgでの情報欄（package.ini の `information` に相当、デフォルトは `{name} v{version}`）"
         },
         "zip_name": {
           "type": "string",
