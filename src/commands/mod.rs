@@ -15,6 +15,7 @@ pub fn run(command: Commands) -> Result<()> {
         Commands::Prepare { force, refresh } => {
             schema::run()?;
             prepare::aviutl2()?;
+            prepare::cleanup_data_generated_by_prepare()?;
             prepare::artifacts(force, None, refresh)
         }
         Commands::PrepareAviUtl2 => prepare::aviutl2(),
@@ -22,7 +23,10 @@ pub fn run(command: Commands) -> Result<()> {
             force,
             profile,
             refresh,
-        } => prepare::artifacts(force, profile, refresh),
+        } => {
+            prepare::cleanup_data_generated_by_prepare()?;
+            prepare::artifacts(force, profile, refresh)
+        }
         Commands::Develop {
             profile,
             skip_start,

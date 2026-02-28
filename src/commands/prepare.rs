@@ -2,14 +2,14 @@ use anyhow::{Context, Result, bail};
 use fs_err as fs;
 use fs_err::File;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::io::{Read, Write};
-use std::path::PathBuf;
+use std::path::{Component, Path, PathBuf};
 
 use crate::config::{Artifact, PlacementMethod, load_config};
 use crate::util::{
     copy_to_destination, create_symlink, development_dir, extract_zip, find_aviutl2_data_dir,
-    prepare_snapshot_path,
+    prepare_snapshot_path, remove_path,
 };
 
 const API_BASE: &str = "https://api.aviutl2.jp";
@@ -94,6 +94,68 @@ pub fn artifacts(force: bool, profile: Option<String>, refresh: bool) -> Result<
     log::info!("成果物のシンボリックリンクを作成しました");
     save_prepare_snapshot(&config.artifacts, &dev.aviutl2_version)?;
     Ok(())
+}
+
+pub fn cleanup_data_generated_by_prepare() -> Result<()> {
+    let config = load_config()?;
+    let dev = config
+        .development
+        .as_ref()
+        .context("development 設定が必要です")?;
+    let install_dir = development_dir(dev)?;
+    let data_dir = match find_aviutl2_data_dir(&install_dir) {
+        Ok(data_dir) => data_dir,
+        Err(err) => {
+            log::warn!(
+                "AviUtl2 の data ディレクトリが見つからないため、prepare の事前削除をスキップします: {err}"
+            );
+            return Ok(());
+        }
+    };
+
+    let mut destinations = BTreeSet::new();
+    if let Some(snapshot) = load_prepare_snapshot()? {
+        for artifact in snapshot.artifacts.into_values() {
+            destinations.insert(PathBuf::from(artifact.destination));
+        }
+    }
+    for artifact in config.artifacts.into_values() {
+        destinations.insert(PathBuf::from(artifact.destination));
+    }
+
+    for destination in destinations {
+        let Some(target) = resolve_data_destination(&data_dir, &destination) else {
+            log::warn!(
+                "data 配下でないため削除をスキップします: {}",
+                destination.display()
+            );
+            continue;
+        };
+        if target.exists() || target.is_symlink() {
+            remove_path(&target)?;
+            log::info!("前回の成果物を削除しました: {}", target.display());
+        }
+    }
+
+    Ok(())
+}
+
+fn resolve_data_destination(data_dir: &Path, destination: &Path) -> Option<PathBuf> {
+    if destination.is_absolute() {
+        return None;
+    }
+    let mut normalized = PathBuf::new();
+    for component in destination.components() {
+        match component {
+            Component::Normal(part) => normalized.push(part),
+            Component::CurDir => {}
+            _ => return None,
+        }
+    }
+    if normalized.as_os_str().is_empty() {
+        return None;
+    }
+    Some(data_dir.join(normalized))
 }
 
 #[derive(Serialize, Deserialize)]
@@ -197,4 +259,25 @@ fn download_aviutl2_zip(version: &str) -> Result<PathBuf> {
     let mut file = File::create(&tmp_path)?;
     file.write_all(&buf)?;
     Ok(tmp_path)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::resolve_data_destination;
+    use std::path::{Path, PathBuf};
+
+    #[test]
+    fn resolve_data_destination_rejects_escape_path() {
+        let data = Path::new("C:/work/data");
+        let dest = Path::new("../outside/file.txt");
+        assert!(resolve_data_destination(data, dest).is_none());
+    }
+
+    #[test]
+    fn resolve_data_destination_joins_normal_path() {
+        let data = Path::new("C:/work/data");
+        let dest = Path::new("Plugin/test.aux2");
+        let resolved = resolve_data_destination(data, dest).unwrap();
+        assert_eq!(resolved, PathBuf::from("C:/work/data/Plugin/test.aux2"));
+    }
 }
