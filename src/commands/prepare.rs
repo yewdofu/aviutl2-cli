@@ -21,10 +21,12 @@ pub fn aviutl2() -> Result<()> {
         .as_ref()
         .context("development 設定が必要です")?;
     let install_dir = development_dir(dev)?;
-    aviutl2_in(&install_dir, &dev.aviutl2_version)
+    aviutl2_in(&install_dir, &dev.aviutl2_version)?;
+    init_config(&install_dir)?;
+    Ok(())
 }
 
-pub fn aviutl2_in(install_dir: &PathBuf, aviutl2_version: &str) -> Result<()> {
+pub fn aviutl2_in(install_dir: &std::path::Path, aviutl2_version: &str) -> Result<()> {
     fs::create_dir_all(install_dir)
         .with_context(|| format!("ディレクトリ作成に失敗しました: {}", install_dir.display()))?;
     let aviutl2_version = resolve_version(aviutl2_version)?;
@@ -41,6 +43,41 @@ pub fn aviutl2_in(install_dir: &PathBuf, aviutl2_version: &str) -> Result<()> {
     log::info!("AviUtl2 を展開しました: {}", install_dir.display());
     let mut version = File::create(install_dir.join(".aviutl2-version"))?;
     version.write_all(aviutl2_version.as_bytes())?;
+    Ok(())
+}
+
+fn init_config(install_dir: &std::path::Path) -> Result<()> {
+    static CONFIG: &str = dedent::dedent!(
+        r#"
+        [Window.log]
+        hide=0
+        [Logger]
+        ViewLogLevel=1
+        FileLogLevel=1
+        "#
+    );
+    let data_dir = install_dir.join("data");
+    let config_path = data_dir.join("aviutl2.ini");
+    if config_path.exists() {
+        log::info!(
+            "既に aviutl2.ini が存在するため、初期設定の書き込みをスキップします: {}",
+            config_path.display()
+        );
+        return Ok(());
+    }
+    fs::create_dir_all(config_path.parent().unwrap()).with_context(|| {
+        format!(
+            "ディレクトリ作成に失敗しました: {}",
+            config_path.parent().unwrap().display()
+        )
+    })?;
+    fs::write(&config_path, CONFIG).with_context(|| {
+        format!(
+            "初期設定の書き込みに失敗しました: {}",
+            config_path.display()
+        )
+    })?;
+    log::info!("初期設定を書き込みました: {}", config_path.display());
     Ok(())
 }
 
