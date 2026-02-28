@@ -4,6 +4,7 @@ use fs_err as fs;
 use crate::schema::CONFIG_SCHEMA_JSON;
 
 pub fn run() -> Result<()> {
+    crate::config::find_and_cd_to_project()?;
     let target = std::env::current_dir()
         .context("カレントディレクトリの取得に失敗しました")?
         .join(".aviutl2-cli")

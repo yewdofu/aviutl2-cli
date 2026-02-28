@@ -314,24 +314,31 @@ pub enum CatalogAction {
 }
 
 pub fn load_config() -> Result<Config> {
-    let path = find_config_path()?;
+    let path = find_and_cd_to_project()?;
     let content = fs::read_to_string(&path)
         .with_context(|| format!("設定ファイルの読み込みに失敗しました: {}", path.display()))?;
     toml::from_str(&content).with_context(|| "設定ファイルの解析に失敗しました")
 }
 
-fn find_config_path() -> Result<PathBuf> {
-    let local = PathBuf::from("aviutl2.toml");
-    if local.exists() {
-        return Ok(local);
+pub fn find_and_cd_to_project() -> Result<PathBuf> {
+    static CANDIDATE_FILES: &[&str] = &["aviutl2.toml", ".aviutl2.toml", ".config/aviutl2.toml"];
+    let mut current =
+        std::env::current_dir().context("カレントディレクトリの取得に失敗しました")?;
+    loop {
+        for candidate in CANDIDATE_FILES {
+            let candidate_path = current.join(candidate);
+            if candidate_path.is_file() {
+                std::env::set_current_dir(&current).with_context(|| {
+                    format!(
+                        "カレントディレクトリの変更に失敗しました: {}",
+                        current.display()
+                    )
+                })?;
+                return Ok(candidate_path);
+            }
+        }
+        if !current.pop() {
+            bail!("設定ファイルが見つかりませんでした");
+        }
     }
-    let config_dir = std::env::var_os("XDG_CONFIG_HOME")
-        .map(PathBuf::from)
-        .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".config")))
-        .context("設定ファイルが見つかりません")?;
-    let path = config_dir.join("aviutl2.toml");
-    if path.exists() {
-        return Ok(path);
-    }
-    bail!("aviutl2.toml が見つかりません");
 }
