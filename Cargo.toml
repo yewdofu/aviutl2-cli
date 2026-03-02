@@ -7,6 +7,16 @@ license = "MIT"
 description = "AviUtl2のプラグイン・スクリプト開発に便利なコマンドラインツール"
 repository = "https://github.com/sevenc-nanashi/aviutl2-cli"
 
+[package.metadata.binstall]
+pkg-fmt = "bin"
+disabled-strategies = ["quick-install", "compile"]
+
+[package.metadata.binstall.overrides.x86_64-unknown-linux-gnu]
+pkg-url = "{ repo }/releases/download/{ version }/au2-v{ version }-linux"
+
+[package.metadata.binstall.overrides.x86_64-pc-windows-msvc]
+pkg-url = "{ repo }/releases/download/{ version }/au2-v{ version }-windows.exe"
+
 [[bin]]
 name = "au2"
 path = "src/main.rs"
