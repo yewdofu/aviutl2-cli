@@ -222,8 +222,8 @@ fn build_versions(
     }])
 }
 
+static CATALOG_EXCLUDED_FILES: &[&str] = &["package.txt", "package.ini"];
 fn collect_version_files(stage_dir: &std::path::Path) -> Result<Vec<catalog_schema::VersionFile>> {
-    static EXCLUDED_FILES: &[&str] = &["package.txt", "package.ini"];
     let mut files = Vec::new();
     for entry in walkdir::WalkDir::new(stage_dir)
         .into_iter()
@@ -236,7 +236,7 @@ fn collect_version_files(stage_dir: &std::path::Path) -> Result<Vec<catalog_sche
         if path
             .file_name()
             .and_then(|name| name.to_str())
-            .is_some_and(|name| EXCLUDED_FILES.contains(&name))
+            .is_some_and(|name| CATALOG_EXCLUDED_FILES.contains(&name))
         {
             continue;
         }
@@ -271,7 +271,7 @@ fn default_install_steps(
         let relative_path = file
             .strip_prefix(stage_dir)
             .with_context(|| format!("相対パスの生成に失敗しました: {}", file.display()))?;
-        if relative_path == "package.txt" {
+        if CATALOG_EXCLUDED_FILES.contains(&relative_path.to_str().unwrap_or_default()) {
             continue;
         }
         actions.push(catalog_schema::InstallerAction::Copy {
