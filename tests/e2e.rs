@@ -1,7 +1,7 @@
 use assert_cmd::Command;
 use fs_err as fs;
 use predicates::str::contains;
-use std::path::Path;
+use std::{io::Read, path::Path};
 use tempfile::tempdir;
 
 fn write_file(path: &Path, content: &str) -> Result<(), std::io::Error> {
@@ -12,7 +12,7 @@ fn write_file(path: &Path, content: &str) -> Result<(), std::io::Error> {
 }
 
 #[test]
-fn e2e_init_creates_config_and_updates_gitignore() -> Result<(), Box<dyn std::error::Error>> {
+fn e2e_init_creates_config_and_updates_gitignore() -> anyhow::Result<()> {
     let temp = tempdir()?;
     let project_dir = temp.path().join("my_aviutl2_project");
     fs::create_dir_all(&project_dir)?;
@@ -38,7 +38,7 @@ fn e2e_init_creates_config_and_updates_gitignore() -> Result<(), Box<dyn std::er
 }
 
 #[test]
-fn e2e_init_fails_when_config_exists() -> Result<(), Box<dyn std::error::Error>> {
+fn e2e_init_fails_when_config_exists() -> anyhow::Result<()> {
     let temp = tempdir()?;
     let project_dir = temp.path().join("existing_project");
     fs::create_dir_all(&project_dir)?;
@@ -64,7 +64,7 @@ fn e2e_init_fails_when_config_exists() -> Result<(), Box<dyn std::error::Error>>
 }
 
 #[test]
-fn e2e_prepare_schema_writes_schema_file() -> Result<(), Box<dyn std::error::Error>> {
+fn e2e_prepare_schema_writes_schema_file() -> anyhow::Result<()> {
     let temp = tempdir()?;
     let project_dir = temp.path().join("schema_project");
     fs::create_dir_all(&project_dir)?;
@@ -100,7 +100,7 @@ fn e2e_prepare_schema_writes_schema_file() -> Result<(), Box<dyn std::error::Err
 }
 
 #[test]
-fn e2e_release_writes_catalog_json() -> Result<(), Box<dyn std::error::Error>> {
+fn e2e_release_writes_catalog_json() -> anyhow::Result<()> {
     let temp = tempdir()?;
     let project_dir = temp.path().join("catalog_project");
     fs::create_dir_all(&project_dir)?;
@@ -179,6 +179,86 @@ fn e2e_release_writes_catalog_json() -> Result<(), Box<dyn std::error::Error>> {
             .unwrap_or_default()
             .len()
             == 32
+    );
+
+    Ok(())
+}
+
+#[test]
+fn e2e_release_creates_package_information() -> anyhow::Result<()> {
+    let temp = tempdir()?;
+    let project_dir = temp.path().join("package_info_project");
+    fs::create_dir_all(&project_dir)?;
+    fs::create_dir_all(project_dir.join("dist"))?;
+    write_file(
+        &project_dir.join("dist").join("plugin.auf"),
+        "dummy-binary-content",
+    )?;
+
+    let config_path = project_dir.join("aviutl2.toml");
+    write_file(
+        &config_path,
+        dedent::dedent!(
+            r#"[project]
+               id = "sevenc-nanashi.aviutl2-cli.package-info-project"
+               name = "package-info-project"
+               version = "0.1.0"
+
+               [artifacts.plugin]
+               source = "dist/plugin.auf"
+               destination = "Plugin/plugin.auf"
+               placement_method = "copy"
+
+               [release]
+               package_template = "./package_template.txt"
+           "#
+        ),
+    )?;
+
+    write_file(
+        &project_dir.join("package_template.txt"),
+        "This is a package for {name} version {version}.",
+    )?;
+
+    Command::new(assert_cmd::cargo::cargo_bin!("au2"))
+        .current_dir(&project_dir)
+        .arg("release")
+        .assert()
+        .success();
+
+    let zip_path = project_dir
+        .join("release")
+        .join("sevenc-nanashi.aviutl2-cli.package-info-project-v0.1.0.au2pkg.zip");
+    assert!(zip_path.exists());
+    let mut zip = zip::ZipArchive::new(std::fs::File::open(zip_path)?)?;
+
+    let mut file = zip.by_name("package.txt")?;
+    let mut content = String::new();
+    file.read_to_string(&mut content)?;
+    assert_eq!(
+        content,
+        "This is a package for package-info-project version 0.1.0."
+    );
+    drop(file);
+
+    let mut ini_file = zip.by_name("package.ini")?;
+    let mut ini_content = String::new();
+    ini_file.read_to_string(&mut ini_content)?;
+    let mut ini = configparser::ini::Ini::new();
+    ini.read(ini_content).unwrap();
+    assert_eq!(
+        ini.get_map_ref()
+            .get("package")
+            .and_then(|s| s.get("id").cloned())
+            .flatten(),
+        Some("sevenc-nanashi.aviutl2-cli.package-info-project".to_string())
+    );
+    assert_eq!(
+        ini.get_map_ref()
+            .get("package")
+            .and_then(|s| s.get("information").cloned())
+            .flatten(),
+        Some("package-info-project v0.1.0".to_string())
     );
 
     Ok(())
