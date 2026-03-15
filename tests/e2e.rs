@@ -46,7 +46,11 @@ fn e2e_init_fails_when_config_exists() -> Result<(), Box<dyn std::error::Error>>
     let config_path = project_dir.join("aviutl2.toml");
     write_file(
         &config_path,
-        "[project]\nname = \"demo\"\nversion = \"0.1.0\"\n\n[artifacts]\n",
+        r#"[project]
+            id = "sevenc-nanashi.aviutl2-cli.existing-project"
+            name = "existing_project"
+            version = "0.1.0"
+            "#,
     )?;
 
     Command::new(assert_cmd::cargo::cargo_bin!("au2"))
@@ -68,16 +72,19 @@ fn e2e_prepare_schema_writes_schema_file() -> Result<(), Box<dyn std::error::Err
     let config_path = project_dir.join("aviutl2.toml");
     write_file(
         &config_path,
-        r#"[project]
-name = "schema"
-version = "0.1.0"
+        dedent::dedent!(
+            r#"[project]
+               id = "sevenc-nanashi.aviutl2-cli.schema-project"
+               name = "schema"
+               version = "0.1.0"
 
-[artifacts]
+               [artifacts]
 
-[development]
-aviutl2_version = "latest"
-install_dir = "devdir"
-"#,
+               [development]
+               aviutl2_version = "latest"
+               install_dir = "devdir"
+           "#
+        ),
     )?;
 
     Command::new(assert_cmd::cargo::cargo_bin!("au2"))
@@ -106,34 +113,37 @@ fn e2e_release_writes_catalog_json() -> Result<(), Box<dyn std::error::Error>> {
     let config_path = project_dir.join("aviutl2.toml");
     write_file(
         &config_path,
-        r#"[project]
-name = "catalog-project"
-version = "1.2.3"
+        dedent::dedent!(
+            r#"[project]
+               id = "sevenc-nanashi.aviutl2-cli.catalog-project"
+               name = "catalog-project"
+               version = "1.2.3"
 
-[artifacts.plugin]
-source = "dist/plugin.auf"
-destination = "Plugin/plugin.auf"
-placement_method = "copy"
+               [artifacts.plugin]
+               source = "dist/plugin.auf"
+               destination = "Plugin/plugin.auf"
+               placement_method = "copy"
 
-[catalog]
-id = "my-plugin"
-name = "My Plugin"
-type = "filter"
-author = "nanashi"
-summary = "summary"
-homepage = "https://example.com"
-description = "desc"
+               [catalog]
+               id = "my-plugin"
+               name = "My Plugin"
+               type = "filter"
+               author = "nanashi"
+               summary = "summary"
+               homepage = "https://example.com"
+               description = "desc"
 
-[catalog.license]
-type = "CC0-1.0"
+               [catalog.license]
+               type = "CC0-1.0"
 
-[catalog.download_source]
-type = "github"
-owner = "sevenc-nanashi"
-repo = "aviutl2-cli"
+               [catalog.download_source]
+               type = "github"
+               owner = "sevenc-nanashi"
+               repo = "aviutl2-cli"
 
-[release]
-"#,
+               [release]
+               "#
+        ),
     )?;
 
     Command::new(assert_cmd::cargo::cargo_bin!("au2"))
@@ -153,7 +163,7 @@ repo = "aviutl2-cli"
     );
     assert_eq!(
         json[0]["installer"]["source"]["github"]["pattern"],
-        "^catalog-project-v[^/]+\\.au2pkg\\.zip$"
+        r"^sevenc-nanashi\.aviutl2-cli\.catalog-project-v[^/]+\.au2pkg\.zip$"
     );
     assert_eq!(json[0]["installer"]["install"][0]["action"], "download");
     assert_eq!(json[0]["installer"]["install"][1]["action"], "extract");

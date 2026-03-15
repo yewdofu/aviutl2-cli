@@ -15,36 +15,21 @@ pub fn run(profile: Option<String>, set_version: Option<String>) -> Result<()> {
     if let Some(version) = set_version {
         config.project.version = version;
     }
-    let release = config.release.as_ref().unwrap_or(&config::Release {
-        package_id: None,
-        package_name: None,
-        package_information: None,
-        profile: None,
-        include: None,
-        package_template: None,
-        zip_name: None,
-        output_dir: None,
-        prebuild: None,
-        postbuild: None,
-    });
-
     let profile = profile
-        .or_else(|| release.profile.clone())
-        .unwrap_or_else(|| "release".to_string());
-    let output_dir = PathBuf::from(release.output_dir.as_deref().unwrap_or("release"));
+        .as_deref()
+        .or(config.release.profile.as_deref())
+        .unwrap_or("release");
+    let output_dir = PathBuf::from(config.release.output_dir.as_deref().unwrap_or("release"));
     fs::create_dir_all(&output_dir)?;
 
-    super::develop::run_optional_commands(release.prebuild.as_ref(), &config.build_group)?;
+    super::develop::run_optional_commands(config.release.prebuild.as_ref(), &config.build_group)?;
 
-    let stage_dir = build_release_stage(
-        &config,
-        &profile,
-        release.include.as_deref(),
-        Some(release),
-        false,
-    )?;
+    let stage_dir =
+        build_release_stage(&config, profile, config.release.include.as_deref(), false)?;
+    prepare_package_files(&stage_dir, &config.release, &config.project)?;
 
-    let zip_base = release
+    let zip_base = config
+        .release
         .zip_name
         .clone()
         .unwrap_or_else(|| DEFAULT_ZIP_NAME.to_string());
@@ -57,7 +42,7 @@ pub fn run(profile: Option<String>, set_version: Option<String>) -> Result<()> {
     let zip_path = output_dir.join(zip_file_name);
     create_zip(&stage_dir, &zip_path)?;
     log::info!("リリースパッケージを作成しました: {}", zip_path.display());
-    super::develop::run_optional_commands(release.postbuild.as_ref(), &config.build_group)?;
+    super::develop::run_optional_commands(config.release.postbuild.as_ref(), &config.build_group)?;
 
     if let Some(catalog_config) = &config.catalog {
         log::warn!(
@@ -65,7 +50,7 @@ pub fn run(profile: Option<String>, set_version: Option<String>) -> Result<()> {
         );
         let versions = build_versions(&config, &stage_dir)?;
         let generated_pattern =
-            generate_au2pkg_pattern(&config.project, release.zip_name.as_deref());
+            generate_au2pkg_pattern(&config.project, config.release.zip_name.as_deref());
         let catalog_index =
             build_catalog_index(catalog_config, &stage_dir, &versions, &generated_pattern)?;
         let catalog_json = serde_json::to_string_pretty(&catalog_index)
@@ -86,17 +71,14 @@ pub(crate) fn build_release_stage(
     config: &Config,
     profile: &str,
     include: Option<&[String]>,
-    release_config: Option<&crate::config::Release>,
     refresh: bool,
 ) -> Result<PathBuf> {
     let artifacts = super::develop::resolve_artifacts(config, Some(profile), include, refresh)?;
-    build_release_stage_from_artifacts(artifacts, release_config, &config.project)
+    build_release_stage_from_artifacts(artifacts)
 }
 
 pub(crate) fn build_release_stage_from_artifacts(
     artifacts: Vec<super::develop::ResolvedArtifact>,
-    release_config: Option<&crate::config::Release>,
-    project: &crate::config::Project,
 ) -> Result<PathBuf> {
     let stage_dir = release_stage_dir()?;
     if stage_dir.exists() {
@@ -114,7 +96,15 @@ pub(crate) fn build_release_stage_from_artifacts(
         )?;
     }
 
-    if let Some(template) = &release_config.and_then(|r| r.package_template.as_ref()) {
+    Ok(stage_dir)
+}
+
+pub(crate) fn prepare_package_files(
+    stage_dir: &std::path::Path,
+    release_config: &crate::config::Release,
+    project: &crate::config::Project,
+) -> Result<()> {
+    if let Some(template) = &release_config.package_template.as_deref() {
         let template_path = PathBuf::from(template);
         let target = stage_dir.join("package.txt");
         let content = fs::read_to_string(&template_path).with_context(|| {
@@ -131,14 +121,11 @@ pub(crate) fn build_release_stage_from_artifacts(
     }
 
     let package_ini_path = stage_dir.join("package.ini");
-    let id = release_config
-        .and_then(|r| r.package_id.as_deref())
-        .unwrap_or("{id}");
-    let name = release_config
-        .and_then(|r| r.package_name.as_deref())
-        .unwrap_or("{name}");
+    let id = release_config.package_id.as_deref().unwrap_or("{id}");
+    let name = release_config.package_name.as_deref().unwrap_or("{name}");
     let information = release_config
-        .and_then(|r| r.package_information.as_deref())
+        .package_information
+        .as_deref()
         .unwrap_or("{name} v{version}");
     let package_ini = format!(
         dedent::dedent!(
@@ -160,7 +147,7 @@ pub(crate) fn build_release_stage_from_artifacts(
         )
     })?;
 
-    Ok(stage_dir)
+    Ok(())
 }
 
 fn normalize_to_crlf(input: &str) -> String {

@@ -12,8 +12,10 @@ pub struct Config {
     #[serde(default)]
     pub build_group: HashMap<String, BuildCommand>,
     pub development: Option<Development>,
-    pub preview: Option<Preview>,
-    pub release: Option<Release>,
+    #[serde(default)]
+    pub preview: Preview,
+    #[serde(default)]
+    pub release: Release,
     pub catalog: Option<Catalog>,
 }
 
@@ -70,7 +72,7 @@ pub struct Development {
     pub postbuild: Option<BuildCommand>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize,Default, Clone, PartialEq)]
 pub struct Preview {
     pub aviutl2_version: Option<String>,
     pub install_dir: Option<String>,
@@ -80,7 +82,7 @@ pub struct Preview {
     pub postbuild: Option<BuildCommand>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Default, Clone, PartialEq)]
 pub struct Release {
     pub output_dir: Option<String>,
     pub package_template: Option<String>,

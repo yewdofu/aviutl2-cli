@@ -107,19 +107,23 @@ fn prepare_artifacts_copies_file_to_data_dir() -> Result<(), Box<dyn std::error:
     let config_path = project_dir.join("aviutl2.toml");
     write_file(
         &config_path,
-        br#"[project]
-name = "prepare"
-version = "0.1.0"
+        dedent::dedent!(
+            r#"[project]
+               id = "sevenc-nanashi.aviutl2-cli.prepare-project"
+               name = "prepare"
+               version = "0.1.0"
 
-[artifacts.my_plugin]
-source = "artifacts/my_plugin.aux2"
-destination = "Plugin/my_plugin.aux2"
-placement_method = "copy"
+               [artifacts.my_plugin]
+               source = "artifacts/my_plugin.aux2"
+               destination = "Plugin/my_plugin.aux2"
+               placement_method = "copy"
 
-[development]
-aviutl2_version = "latest"
-install_dir = "dev"
-"#,
+               [development]
+               aviutl2_version = "latest"
+               install_dir = "dev"
+               "#
+        )
+        .as_bytes(),
     )?;
 
     Command::new(assert_cmd::cargo::cargo_bin!("au2"))
@@ -160,19 +164,23 @@ fn prepare_artifacts_creates_symlink_when_allowed() -> Result<(), Box<dyn std::e
     let config_path = project_dir.join("aviutl2.toml");
     write_file(
         &config_path,
-        br#"[project]
-name = "prepare"
-version = "0.1.0"
+        dedent::dedent!(
+            r#"[project]
+               id = "sevenc-nanashi.aviutl2-cli.prepare-project-symlink"
+               name = "prepare"
+               version = "0.1.0"
 
-[artifacts.my_plugin]
-source = "artifacts/my_plugin.aux2"
-destination = "Plugin/my_plugin.aux2"
-placement_method = "symlink"
+               [artifacts.my_plugin]
+               source = "artifacts/my_plugin.aux2"
+               destination = "Plugin/my_plugin.aux2"
+               placement_method = "symlink"
 
-[development]
-aviutl2_version = "latest"
-install_dir = "dev"
-"#,
+               [development]
+               aviutl2_version = "latest"
+               install_dir = "dev"
+            "#
+        )
+        .as_bytes(),
     )?;
 
     Command::new(assert_cmd::cargo::cargo_bin!("au2"))
@@ -224,7 +232,20 @@ fn prepare_artifacts_downloads_http_source() -> Result<(), Box<dyn std::error::E
     write_file(
         &config_path,
         format!(
-            "[project]\nname = \"prepare\"\nversion = \"0.1.0\"\n\n[artifacts.my_plugin]\nsource = \"{}\"\ndestination = \"Plugin/my_plugin.aux2\"\nplacement_method = \"copy\"\n\n[development]\naviutl2_version = \"latest\"\ninstall_dir = \"dev\"\n",
+            dedent::dedent!(
+                r#"[project]
+                   id = "sevenc-nanashi.aviutl2-cli.prepare-http-project"
+                   name = "prepare"
+                   version = "0.1.0"
+                   [artifacts.my_plugin]
+                   source = "{}"
+                   destination = "Plugin/my_plugin.aux2"
+                   placement_method = "copy"
+                   [development]
+                   aviutl2_version = "latest"
+                   install_dir = "dev"
+                   "#
+            ),
             source_url
         )
         .as_bytes(),
