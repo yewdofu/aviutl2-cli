@@ -33,14 +33,14 @@ pub fn aviutl2_in(install_dir: &std::path::Path, aviutl2_version: &str) -> Resul
     if let Ok(current_version) = fs::read_to_string(install_dir.join(".aviutl2-version"))
         && current_version == aviutl2_version
     {
-        log::info!("AviUtl2 のバージョンが一致しています: {}", aviutl2_version);
+        tracing::info!("AviUtl2 のバージョンが一致しています: {}", aviutl2_version);
         return Ok(());
     }
 
     let zip_path = download_aviutl2_zip(&aviutl2_version)?;
     extract_zip(&zip_path, install_dir)?;
     fs::remove_file(&zip_path).ok();
-    log::info!("AviUtl2 を展開しました: {}", install_dir.display());
+    tracing::info!("AviUtl2 を展開しました: {}", install_dir.display());
     let mut version = File::create(install_dir.join(".aviutl2-version"))?;
     version.write_all(aviutl2_version.as_bytes())?;
     Ok(())
@@ -59,7 +59,7 @@ fn init_config(install_dir: &std::path::Path) -> Result<()> {
     let data_dir = install_dir.join("data");
     let config_path = data_dir.join("aviutl2.ini");
     if config_path.exists() {
-        log::info!(
+        tracing::info!(
             "既に aviutl2.ini が存在するため、初期設定の書き込みをスキップします: {}",
             config_path.display()
         );
@@ -77,7 +77,7 @@ fn init_config(install_dir: &std::path::Path) -> Result<()> {
             config_path.display()
         )
     })?;
-    log::info!("初期設定を書き込みました: {}", config_path.display());
+    tracing::info!("初期設定を書き込みました: {}", config_path.display());
     Ok(())
 }
 
@@ -118,14 +118,14 @@ pub fn artifacts(force: bool, profile: Option<String>, refresh: bool) -> Result<
             }
             _ => {
                 if !source.exists() {
-                    log::warn!("source が見つかりません: {}", source.display());
+                    tracing::warn!("source が見つかりません: {}", source.display());
                     continue;
                 }
                 copy_to_destination(&source, &dest, force)?
             }
         }
     }
-    log::info!("成果物のシンボリックリンクを作成しました");
+    tracing::info!("成果物のシンボリックリンクを作成しました");
     save_prepare_snapshot(&config.artifacts, &dev.aviutl2_version)?;
     Ok(())
 }
@@ -140,7 +140,7 @@ pub fn cleanup_data_generated_by_prepare() -> Result<()> {
     let data_dir = match find_aviutl2_data_dir(&install_dir) {
         Ok(data_dir) => data_dir,
         Err(err) => {
-            log::warn!(
+            tracing::warn!(
                 "AviUtl2 の data ディレクトリが見つからないため、prepare の事前削除をスキップします: {err}"
             );
             return Ok(());
@@ -159,7 +159,7 @@ pub fn cleanup_data_generated_by_prepare() -> Result<()> {
 
     for destination in destinations {
         let Some(target) = resolve_data_destination(&data_dir, &destination) else {
-            log::warn!(
+            tracing::warn!(
                 "data 配下でないため削除をスキップします: {}",
                 destination.display()
             );
@@ -167,7 +167,7 @@ pub fn cleanup_data_generated_by_prepare() -> Result<()> {
         };
         if target.exists() || target.is_symlink() {
             remove_path(&target)?;
-            log::info!("前回の成果物を削除しました: {}", target.display());
+            tracing::info!("前回の成果物を削除しました: {}", target.display());
         }
     }
 

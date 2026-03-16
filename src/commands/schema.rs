@@ -13,6 +13,6 @@ pub fn run() -> Result<()> {
         .with_context(|| format!("ディレクトリ作成に失敗しました: {}", target.display()))?;
     fs::write(&target, CONFIG_SCHEMA_JSON)
         .with_context(|| format!("JSON Schema の書き込みに失敗しました: {}", target.display()))?;
-    log::info!("JSON Schema を出力しました: {}", target.display());
+    tracing::info!("JSON Schema を出力しました: {}", target.display());
     Ok(())
 }

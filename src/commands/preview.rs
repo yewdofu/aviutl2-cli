@@ -34,19 +34,19 @@ pub fn run(
     let stage_dir = super::release::build_release_stage_from_artifacts(artifacts)?;
     let data_dir = find_aviutl2_data_dir(&install_dir)?;
     copy_dir_contents(&stage_dir, &data_dir, true)?;
-    log::info!("プレビュー用に成果物を配置しました");
+    tracing::info!("プレビュー用に成果物を配置しました");
     super::develop::run_optional_commands(Some(&config.preview.postbuild), &config.build_group)?;
 
     if !skip_start {
         let aviutl_exe = data_dir.parent().unwrap_or(&data_dir).join("aviutl2.exe");
         if aviutl_exe.exists() {
-            log::info!("AviUtl2 を起動します: {}", aviutl_exe.display());
+            tracing::info!("AviUtl2 を起動します: {}", aviutl_exe.display());
             Command::new(aviutl_exe)
                 .args(&args)
                 .spawn()
                 .with_context(|| "AviUtl2 の起動に失敗しました")?;
         } else {
-            log::warn!("AviUtl2.exe が見つかりません: {}", aviutl_exe.display());
+            tracing::warn!("AviUtl2.exe が見つかりません: {}", aviutl_exe.display());
         }
     }
     Ok(())

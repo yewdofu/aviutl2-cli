@@ -32,11 +32,11 @@ pub fn run(profile: Option<String>, set_version: Option<String>) -> Result<()> {
     };
     let zip_path = output_dir.join(zip_file_name);
     create_zip(&stage_dir, &zip_path)?;
-    log::info!("リリースパッケージを作成しました: {}", zip_path.display());
+    tracing::info!("リリースパッケージを作成しました: {}", zip_path.display());
     super::develop::run_optional_commands(Some(&config.release.postbuild), &config.build_group)?;
 
     if let Some(catalog_config) = &config.catalog {
-        log::warn!(
+        tracing::warn!(
             "カタログ生成機能は実験的機能です。将来のバージョンで変更または削除される可能性があります。"
         );
         let versions = build_versions(&config, &stage_dir)?;
@@ -53,7 +53,7 @@ pub fn run(profile: Option<String>, set_version: Option<String>) -> Result<()> {
                 catalog_path.display()
             )
         })?;
-        log::info!("カタログ JSON を作成しました: {}", catalog_path.display());
+        tracing::info!("カタログ JSON を作成しました: {}", catalog_path.display());
     }
     Ok(())
 }

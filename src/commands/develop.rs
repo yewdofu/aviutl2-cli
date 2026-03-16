@@ -48,20 +48,20 @@ pub fn run(
         }
     }
     if anything_copied {
-        log::info!("成果物を配置しました");
+        tracing::info!("成果物を配置しました");
     }
     run_optional_commands(Some(&dev.postbuild), &config.build_group)?;
 
     if !skip_start {
         let aviutl_exe = data_dir.parent().unwrap_or(&data_dir).join("aviutl2.exe");
         if aviutl_exe.exists() {
-            log::info!("AviUtl2 を起動します: {}", aviutl_exe.display());
+            tracing::info!("AviUtl2 を起動します: {}", aviutl_exe.display());
             Command::new(aviutl_exe)
                 .args(args)
                 .spawn()
                 .with_context(|| "AviUtl2 の起動に失敗しました")?;
         } else {
-            log::warn!("AviUtl2.exe が見つかりません: {}", aviutl_exe.display());
+            tracing::warn!("AviUtl2.exe が見つかりません: {}", aviutl_exe.display());
         }
     }
     Ok(())
@@ -82,7 +82,7 @@ fn warn_if_prepare_snapshot_changed(config: &Config, aviutl2_version: &str) -> R
     if snapshot.aviutl2_version != current.aviutl2_version
         || snapshot.artifacts != current.artifacts
     {
-        log::warn!(
+        tracing::warn!(
             "prepare 実行時の設定と現在の設定が異なります。必要なら `au2 prepare` を再実行してください。"
         );
     }
@@ -151,7 +151,7 @@ pub fn run_build_plan(plan: &ResolvedBuild, executed_groups: &mut HashSet<String
 
 pub fn run_build_commands(commands: &[String]) -> Result<()> {
     for cmd in commands {
-        log::info!("コマンド実行: {}", cmd);
+        tracing::info!("コマンド実行: {}", cmd);
         let status = run_shell_command(cmd)?;
         if !status.success() {
             bail!("ビルドコマンドが失敗しました: {}", cmd);

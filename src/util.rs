@@ -136,7 +136,7 @@ pub fn create_symlink(source: &Path, destination: &Path, force: bool) -> Result<
             return Err(err.into());
         }
     }
-    log::info!(
+    tracing::info!(
         "symlink を作成しました: {} -> {}",
         destination.display(),
         source.display()
@@ -175,7 +175,7 @@ pub fn copy_to_destination(source: &Path, destination: &Path, force: bool) -> Re
         }
     }
     fs::copy(source, destination)?;
-    log::info!(
+    tracing::info!(
         "コピーしました: {} -> {}",
         source.display(),
         destination.display()
@@ -269,7 +269,7 @@ fn download_http_source(url: &str, refresh: bool) -> Result<PathBuf> {
     let hash = hash_url(url);
     let cache_path = cache_dir.join(format!("{hash}_{file_name}"));
     if cache_path.exists() && !refresh {
-        log::info!(
+        tracing::info!(
             "source のキャッシュを使用します: {} -> {}",
             url,
             cache_path.display()
@@ -310,7 +310,7 @@ fn download_http_source(url: &str, refresh: bool) -> Result<PathBuf> {
         remove_path(&cache_path)?;
     }
     fs::rename(&temp_path, &cache_path)?;
-    log::info!(
+    tracing::info!(
         "source をダウンロードしました: {} -> {}",
         url,
         cache_path.display()

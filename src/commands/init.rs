@@ -96,17 +96,17 @@ pub fn run() -> Result<()> {
     };
     let template = init_template(&init_config);
     fs::write(&path, template)?;
-    log::info!("aviutl2.toml を作成しました");
+    tracing::info!("aviutl2.toml を作成しました");
 
     let gitignore_path = PathBuf::from(".gitignore");
     if gitignore_path.exists() {
         let mut content = fs::read_to_string(&gitignore_path)?;
         content.push_str("\n# AviUtl2 CLI\n/.aviutl2-cli\n/release\n");
         fs::write(&gitignore_path, content)?;
-        log::info!(".gitignore を更新しました");
+        tracing::info!(".gitignore を更新しました");
     } else {
         fs::write(&gitignore_path, "# AviUtl2 CLI\n/.aviutl2-cli\n/release\n")?;
-        log::info!(".gitignore を作成しました");
+        tracing::info!(".gitignore を作成しました");
     }
     Ok(())
 }
