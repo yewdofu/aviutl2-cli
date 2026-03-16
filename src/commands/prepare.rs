@@ -88,10 +88,7 @@ pub fn artifacts(force: bool, profile: Option<String>, refresh: bool) -> Result<
         .as_ref()
         .context("development 設定が必要です")?;
     let install_dir = development_dir(dev)?;
-    let profile = profile
-        .as_deref()
-        .or(dev.profile.as_deref())
-        .unwrap_or("debug");
+    let profile = profile.as_deref().unwrap_or(&dev.profile);
     let artifacts = super::develop::resolve_artifacts(&config, Some(profile), None, refresh)?;
     let data_dir = find_aviutl2_data_dir(&install_dir)?;
 

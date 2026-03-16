@@ -23,23 +23,19 @@ pub fn run(
     let install_dir = preview_dir(&config.preview)?;
     super::prepare::aviutl2_in(&install_dir, aviutl2_version)?;
 
-    let profile = profile
-        .or_else(|| config.preview.profile.clone())
-        .or_else(|| config.release.profile.clone())
-        .unwrap_or_else(|| "release".to_string());
+    let profile = profile.unwrap_or_else(|| config.preview.profile.clone());
     let include = config
         .preview
         .include
         .as_deref()
         .or(config.release.include.as_deref());
-    super::develop::run_optional_commands(config.preview.prebuild.as_ref(), &config.build_group)?;
-    let artifacts =
-        super::develop::resolve_artifacts(&config, Some(&profile), include, refresh)?;
+    super::develop::run_optional_commands(Some(&config.preview.prebuild), &config.build_group)?;
+    let artifacts = super::develop::resolve_artifacts(&config, Some(&profile), include, refresh)?;
     let stage_dir = super::release::build_release_stage_from_artifacts(artifacts)?;
     let data_dir = find_aviutl2_data_dir(&install_dir)?;
     copy_dir_contents(&stage_dir, &data_dir, true)?;
     log::info!("プレビュー用に成果物を配置しました");
-    super::develop::run_optional_commands(config.preview.postbuild.as_ref(), &config.build_group)?;
+    super::develop::run_optional_commands(Some(&config.preview.postbuild), &config.build_group)?;
 
     if !skip_start {
         let aviutl_exe = data_dir.parent().unwrap_or(&data_dir).join("aviutl2.exe");

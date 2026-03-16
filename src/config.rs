@@ -58,6 +58,12 @@ pub enum BuildCommand {
     Group(BuildGroupRef),
 }
 
+impl std::default::Default for BuildCommand {
+    fn default() -> Self {
+        BuildCommand::Multiple(vec![])
+    }
+}
+
 #[derive(Deserialize, Serialize, Clone, PartialEq)]
 pub struct BuildGroupRef {
     pub group: String,
@@ -66,34 +72,126 @@ pub struct BuildGroupRef {
 #[derive(Deserialize)]
 pub struct Development {
     pub aviutl2_version: String,
-    pub install_dir: Option<String>,
-    pub profile: Option<String>,
-    pub prebuild: Option<BuildCommand>,
-    pub postbuild: Option<BuildCommand>,
+    #[serde(default = "Development::default_install_dir")]
+    pub install_dir: String,
+    #[serde(default = "Development::default_profile")]
+    pub profile: String,
+    #[serde(default)]
+    pub prebuild: BuildCommand,
+    #[serde(default)]
+    pub postbuild: BuildCommand,
 }
 
-#[derive(Deserialize,Default, Clone, PartialEq)]
+impl Development {
+    pub fn default_install_dir() -> String {
+        ".aviutl2-cli/development".to_string()
+    }
+
+    pub fn default_profile() -> String {
+        "debug".to_string()
+    }
+}
+
+#[derive(Deserialize, Clone, PartialEq)]
 pub struct Preview {
     pub aviutl2_version: Option<String>,
-    pub install_dir: Option<String>,
-    pub profile: Option<String>,
+    #[serde(default = "Preview::default_install_dir")]
+    pub install_dir: String,
+    #[serde(default = "Preview::default_profile")]
+    pub profile: String,
     pub include: Option<Vec<String>>,
-    pub prebuild: Option<BuildCommand>,
-    pub postbuild: Option<BuildCommand>,
+    #[serde(default)]
+    pub prebuild: BuildCommand,
+    #[serde(default)]
+    pub postbuild: BuildCommand,
 }
 
-#[derive(Deserialize, Default, Clone, PartialEq)]
+impl Default for Preview {
+    fn default() -> Self {
+        Self {
+            aviutl2_version: None,
+            install_dir: Self::default_install_dir(),
+            profile: Self::default_profile(),
+            include: None,
+            prebuild: BuildCommand::default(),
+            postbuild: BuildCommand::default(),
+        }
+    }
+}
+
+impl Preview {
+    pub fn default_install_dir() -> String {
+        ".aviutl2-cli/preview".to_string()
+    }
+
+    pub fn default_profile() -> String {
+        "release".to_string()
+    }
+}
+
+#[derive(Deserialize, Clone, PartialEq)]
 pub struct Release {
-    pub output_dir: Option<String>,
+    #[serde(default = "Release::default_output_dir")]
+    pub output_dir: String,
     pub package_template: Option<String>,
-    pub package_id: Option<String>,
-    pub package_name: Option<String>,
-    pub package_information: Option<String>,
-    pub zip_name: Option<String>,
-    pub profile: Option<String>,
+    #[serde(default = "Release::default_package_id")]
+    pub package_id: String,
+    #[serde(default = "Release::default_package_name")]
+    pub package_name: String,
+    #[serde(default = "Release::default_package_information")]
+    pub package_information: String,
+    #[serde(default = "Release::default_zip_name")]
+    pub zip_name: String,
+    #[serde(default = "Release::default_profile")]
+    pub profile: String,
     pub include: Option<Vec<String>>,
-    pub prebuild: Option<BuildCommand>,
-    pub postbuild: Option<BuildCommand>,
+    #[serde(default)]
+    pub prebuild: BuildCommand,
+    #[serde(default)]
+    pub postbuild: BuildCommand,
+}
+
+impl Default for Release {
+    fn default() -> Self {
+        Self {
+            output_dir: Self::default_output_dir(),
+            package_template: None,
+            package_id: Self::default_package_id(),
+            package_name: Self::default_package_name(),
+            package_information: Self::default_package_information(),
+            zip_name: Self::default_zip_name(),
+            profile: Self::default_profile(),
+            include: None,
+            prebuild: BuildCommand::default(),
+            postbuild: BuildCommand::default(),
+        }
+    }
+}
+
+impl Release {
+    pub fn default_output_dir() -> String {
+        "release".to_string()
+    }
+
+    pub fn default_package_id() -> String {
+        "{id}".to_string()
+    }
+
+    pub fn default_package_name() -> String {
+        "{name}".to_string()
+    }
+
+    pub fn default_package_information() -> String {
+        "{name} v{version}".to_string()
+    }
+
+    pub fn default_zip_name() -> String {
+        "{id}-v{version}".to_string()
+    }
+
+    pub fn default_profile() -> String {
+        "release".to_string()
+    }
 }
 
 #[derive(Deserialize, Serialize, Clone, PartialEq)]

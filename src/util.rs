@@ -243,21 +243,11 @@ pub fn fill_template(template: &str, project: &crate::config::Project) -> String
 }
 
 pub fn development_dir(dev: &crate::config::Development) -> Result<PathBuf> {
-    if let Some(install_dir) = dev.install_dir.as_deref() {
-        return Ok(PathBuf::from(install_dir));
-    }
-    let mut base = cli_dir()?;
-    base.push("development");
-    Ok(base)
+    Ok(PathBuf::from(&dev.install_dir))
 }
 
 pub fn preview_dir(preview: &crate::config::Preview) -> Result<PathBuf> {
-    if let Some(install_dir) = preview.install_dir.as_deref() {
-        return Ok(PathBuf::from(install_dir));
-    }
-    let mut base = cli_dir()?;
-    base.push("preview");
-    Ok(base)
+    Ok(PathBuf::from(&preview.install_dir))
 }
 
 pub fn resolve_source(source: &str, refresh: bool) -> Result<PathBuf> {

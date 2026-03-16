@@ -32,11 +32,8 @@ pub fn run(
         .context("development 設定が必要です")?;
     warn_if_prepare_snapshot_changed(&config, &dev.aviutl2_version)?;
     let install_dir = development_dir(dev)?;
-    let profile = profile
-        .as_deref()
-        .or(dev.profile.as_deref())
-        .unwrap_or("debug");
-    run_optional_commands(dev.prebuild.as_ref(), &config.build_group)?;
+    let profile = profile.as_deref().unwrap_or(&dev.profile);
+    run_optional_commands(Some(&dev.prebuild), &config.build_group)?;
     let artifacts = resolve_artifacts(&config, Some(profile), None, refresh)?;
     let data_dir = find_aviutl2_data_dir(&install_dir)?;
     let mut anything_copied = false;
@@ -53,7 +50,7 @@ pub fn run(
     if anything_copied {
         log::info!("成果物を配置しました");
     }
-    run_optional_commands(dev.postbuild.as_ref(), &config.build_group)?;
+    run_optional_commands(Some(&dev.postbuild), &config.build_group)?;
 
     if !skip_start {
         let aviutl_exe = data_dir.parent().unwrap_or(&data_dir).join("aviutl2.exe");

@@ -8,31 +8,22 @@ use crate::{
     util::{copy_to_destination, create_zip, fill_template, release_stage_dir},
 };
 
-const DEFAULT_ZIP_NAME: &str = "{id}-v{version}";
-
 pub fn run(profile: Option<String>, set_version: Option<String>) -> Result<()> {
     let mut config = load_config()?;
     if let Some(version) = set_version {
         config.project.version = version;
     }
-    let profile = profile
-        .as_deref()
-        .or(config.release.profile.as_deref())
-        .unwrap_or("release");
-    let output_dir = PathBuf::from(config.release.output_dir.as_deref().unwrap_or("release"));
+    let profile = profile.as_deref().unwrap_or(&config.release.profile);
+    let output_dir = PathBuf::from(&config.release.output_dir);
     fs::create_dir_all(&output_dir)?;
 
-    super::develop::run_optional_commands(config.release.prebuild.as_ref(), &config.build_group)?;
+    super::develop::run_optional_commands(Some(&config.release.prebuild), &config.build_group)?;
 
     let stage_dir =
         build_release_stage(&config, profile, config.release.include.as_deref(), false)?;
     prepare_package_files(&stage_dir, &config.release, &config.project)?;
 
-    let zip_base = config
-        .release
-        .zip_name
-        .clone()
-        .unwrap_or_else(|| DEFAULT_ZIP_NAME.to_string());
+    let zip_base = config.release.zip_name.clone();
     let zip_name = fill_template(&zip_base, &config.project);
     let zip_file_name = if zip_name.ends_with(".au2pkg.zip") {
         zip_name
@@ -42,7 +33,7 @@ pub fn run(profile: Option<String>, set_version: Option<String>) -> Result<()> {
     let zip_path = output_dir.join(zip_file_name);
     create_zip(&stage_dir, &zip_path)?;
     log::info!("リリースパッケージを作成しました: {}", zip_path.display());
-    super::develop::run_optional_commands(config.release.postbuild.as_ref(), &config.build_group)?;
+    super::develop::run_optional_commands(Some(&config.release.postbuild), &config.build_group)?;
 
     if let Some(catalog_config) = &config.catalog {
         log::warn!(
@@ -50,7 +41,7 @@ pub fn run(profile: Option<String>, set_version: Option<String>) -> Result<()> {
         );
         let versions = build_versions(&config, &stage_dir)?;
         let generated_pattern =
-            generate_au2pkg_pattern(&config.project, config.release.zip_name.as_deref());
+            generate_au2pkg_pattern(&config.project, Some(&config.release.zip_name));
         let catalog_index =
             build_catalog_index(catalog_config, &stage_dir, &versions, &generated_pattern)?;
         let catalog_json = serde_json::to_string_pretty(&catalog_index)
@@ -121,12 +112,9 @@ pub(crate) fn prepare_package_files(
     }
 
     let package_ini_path = stage_dir.join("package.ini");
-    let id = release_config.package_id.as_deref().unwrap_or("{id}");
-    let name = release_config.package_name.as_deref().unwrap_or("{name}");
-    let information = release_config
-        .package_information
-        .as_deref()
-        .unwrap_or("{name} v{version}");
+    let id = &release_config.package_id;
+    let name = &release_config.package_name;
+    let information = &release_config.package_information;
     let package_ini = format!(
         dedent::dedent!(
             r#"
@@ -432,7 +420,8 @@ fn map_source(
 }
 
 fn generate_au2pkg_pattern(project: &crate::config::Project, zip_base: Option<&str>) -> String {
-    let zip_base = zip_base.unwrap_or(DEFAULT_ZIP_NAME);
+    let default_zip_name = crate::config::Release::default_zip_name();
+    let zip_base = zip_base.unwrap_or(&default_zip_name);
     let zip_name_template = if zip_base.ends_with(".au2pkg.zip") {
         zip_base.to_string()
     } else {
