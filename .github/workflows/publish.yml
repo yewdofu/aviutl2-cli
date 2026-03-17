@@ -194,7 +194,7 @@ jobs:
 
       - name: Push changes
         run: |
-          git push origin --tags
+          git push origin HEAD --tags
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
