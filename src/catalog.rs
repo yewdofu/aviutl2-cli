@@ -6,7 +6,8 @@ use crate::{catalog_schema::CatalogIndexEntry, config::CatalogDependency};
 pub fn load_catalog_index(
     refresh: bool,
 ) -> anyhow::Result<std::collections::HashMap<String, CatalogIndexEntry>> {
-    let path = std::path::PathBuf::from(".aviutl2-cli/catalog_index.json");
+    std::fs::create_dir_all(".aviutl2-cli").context("カタログの保存ディレクトリの作成に失敗しました")?;
+    let path = std::path::PathBuf::from(".aviutl2-cli/catalog-index.json");
     if should_reload_catalog_index(&path, refresh) {
         tracing::info!("カタログを再読み込みします: {}", path.display());
         let maybe_entries = fs::read_to_string(&path)

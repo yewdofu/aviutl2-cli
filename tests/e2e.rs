@@ -58,7 +58,7 @@ fn e2e_init_fails_when_config_exists() -> anyhow::Result<()> {
         .arg("init")
         .assert()
         .failure()
-        .stderr(contains("aviutl2.toml は既に存在します"));
+        .stdout(contains("aviutl2.toml は既に存在します"));
 
     Ok(())
 }
