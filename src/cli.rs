@@ -3,6 +3,14 @@ use clap::Subcommand;
 #[derive(clap::Parser)]
 #[command(name = "au2", version, about = "AviUtl2 CLI")]
 pub struct Cli {
+    /// コンフィグの一部をパッチするファイルのパス
+    #[arg(short = 'c', long = "config-patch", global = true)]
+    pub config_patch: Option<String>,
+
+    /// コンフィグ全体を置き換えるファイルのパス
+    #[arg(short = 'C', long = "config-override", global = true)]
+    pub config_override: Option<String>,
+
     #[command(subcommand)]
     pub command: Commands,
 }

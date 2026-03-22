@@ -6,7 +6,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::io::{Read, Write};
 use std::path::{Component, Path, PathBuf};
 
-use crate::config::{Artifact, PlacementMethod, load_config};
+use crate::config::{Artifact, ConfigLoadOpts, PlacementMethod, load_config};
 use crate::util::{
     copy_to_destination, create_symlink, development_dir, extract_zip, find_aviutl2_data_dir,
     prepare_snapshot_path, remove_path,
@@ -14,8 +14,8 @@ use crate::util::{
 
 const API_BASE: &str = "https://api.aviutl2.jp";
 
-pub fn aviutl2() -> Result<()> {
-    let config = load_config()?;
+pub fn aviutl2(opts: &ConfigLoadOpts) -> Result<()> {
+    let config = load_config(opts)?;
     let dev = config
         .development
         .as_ref()
@@ -81,8 +81,8 @@ fn init_config(install_dir: &std::path::Path) -> Result<()> {
     Ok(())
 }
 
-pub fn artifacts(force: bool, profile: Option<String>, refresh: bool) -> Result<()> {
-    let config = load_config()?;
+pub fn artifacts(force: bool, profile: Option<String>, refresh: bool, opts: &ConfigLoadOpts) -> Result<()> {
+    let config = load_config(opts)?;
     let dev = config
         .development
         .as_ref()
@@ -134,8 +134,8 @@ pub fn artifacts(force: bool, profile: Option<String>, refresh: bool) -> Result<
     Ok(())
 }
 
-pub fn cleanup_data_generated_by_prepare() -> Result<()> {
-    let config = load_config()?;
+pub fn cleanup_data_generated_by_prepare(opts: &ConfigLoadOpts) -> Result<()> {
+    let config = load_config(opts)?;
     let dev = config
         .development
         .as_ref()

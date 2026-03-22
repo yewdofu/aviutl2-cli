@@ -4,12 +4,12 @@ use std::path::PathBuf;
 
 use crate::{
     catalog_schema,
-    config::{self, Config, load_config},
+    config::{self, Config, ConfigLoadOpts, load_config},
     util::{copy_to_destination, create_zip, fill_template, release_stage_dir},
 };
 
-pub fn run(profile: Option<String>, set_version: Option<String>) -> Result<()> {
-    let mut config = load_config()?;
+pub fn run(profile: Option<String>, set_version: Option<String>, opts: &ConfigLoadOpts) -> Result<()> {
+    let mut config = load_config(opts)?;
     if let Some(version) = set_version {
         config.project.version = version;
     }

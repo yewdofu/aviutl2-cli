@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use std::process::Command;
 
-use crate::config::load_config;
+use crate::config::{ConfigLoadOpts, load_config};
 use crate::util::{copy_dir_contents, find_aviutl2_data_dir, preview_dir};
 
 pub fn run(
@@ -9,8 +9,9 @@ pub fn run(
     skip_start: bool,
     refresh: bool,
     args: Vec<String>,
+    opts: &ConfigLoadOpts,
 ) -> Result<()> {
-    let config = load_config()?;
+    let config = load_config(opts)?;
     let dev = config
         .development
         .as_ref()
