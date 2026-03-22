@@ -185,6 +185,111 @@ fn e2e_release_writes_catalog_json() -> anyhow::Result<()> {
 }
 
 #[test]
+fn e2e_config_patch_overrides_version() -> anyhow::Result<()> {
+    let temp = tempdir()?;
+    let project_dir = temp.path().join("config_patch_project");
+    fs::create_dir_all(&project_dir)?;
+    fs::create_dir_all(project_dir.join("dist"))?;
+    write_file(
+        &project_dir.join("dist").join("plugin.auf"),
+        "dummy-binary-content",
+    )?;
+
+    write_file(
+        &project_dir.join("aviutl2.toml"),
+        dedent::dedent!(
+            r#"[project]
+               id = "sevenc-nanashi.aviutl2-cli.config-patch-project"
+               name = "config-patch-project"
+               version = "0.1.0"
+
+               [artifacts.plugin]
+               source = "dist/plugin.auf"
+               destination = "Plugin/plugin.auf"
+               placement_method = "copy"
+
+               [release]
+               "#
+        ),
+    )?;
+
+    write_file(
+        &project_dir.join("patch.toml"),
+        dedent::dedent!(
+            r#"[project]
+               version = "9.9.9"
+               "#
+        ),
+    )?;
+
+    Command::new(assert_cmd::cargo::cargo_bin!("au2"))
+        .current_dir(&project_dir)
+        .args(["-c", "patch.toml", "release"])
+        .assert()
+        .success();
+
+    let zip_path = project_dir
+        .join("release")
+        .join("sevenc-nanashi.aviutl2-cli.config-patch-project-v9.9.9.au2pkg.zip");
+    assert!(zip_path.exists(), "パッチしたバージョンのzipが存在するはず");
+
+    let old_zip_path = project_dir
+        .join("release")
+        .join("sevenc-nanashi.aviutl2-cli.config-patch-project-v0.1.0.au2pkg.zip");
+    assert!(!old_zip_path.exists(), "元のバージョンのzipは存在しないはず");
+
+    Ok(())
+}
+
+#[test]
+fn e2e_config_override_uses_other_file() -> anyhow::Result<()> {
+    let temp = tempdir()?;
+    let project_dir = temp.path().join("config_override_project");
+    fs::create_dir_all(&project_dir)?;
+
+    let config_dir = temp.path().join("config_dir");
+    fs::create_dir_all(&config_dir)?;
+    fs::create_dir_all(config_dir.join("dist"))?;
+    write_file(
+        &config_dir.join("dist").join("plugin.auf"),
+        "dummy-binary-content",
+    )?;
+
+    write_file(
+        &config_dir.join("override.toml"),
+        dedent::dedent!(
+            r#"[project]
+               id = "sevenc-nanashi.aviutl2-cli.config-override-project"
+               name = "config-override-project"
+               version = "2.0.0"
+
+               [artifacts.plugin]
+               source = "dist/plugin.auf"
+               destination = "Plugin/plugin.auf"
+               placement_method = "copy"
+
+               [release]
+               "#
+        ),
+    )?;
+
+    let override_path = config_dir.join("override.toml");
+    Command::new(assert_cmd::cargo::cargo_bin!("au2"))
+        .current_dir(&project_dir)
+        .args(["-C", override_path.to_str().unwrap(), "release"])
+        .assert()
+        .success();
+
+    // リリース先はconfig_dir（上書きファイルのディレクトリ）を基準にする
+    let zip_path = config_dir
+        .join("release")
+        .join("sevenc-nanashi.aviutl2-cli.config-override-project-v2.0.0.au2pkg.zip");
+    assert!(zip_path.exists(), "config_dirにzipが作成されるはず");
+
+    Ok(())
+}
+
+#[test]
 fn e2e_release_creates_package_information() -> anyhow::Result<()> {
     let temp = tempdir()?;
     let project_dir = temp.path().join("package_info_project");
