@@ -441,10 +441,7 @@
               "$ref": "#/$defs/CustomCatalogLicense"
             },
             {
-              "$ref": "#/$defs/CC0License"
-            },
-            {
-              "$ref": "#/$defs/CustomCatalogLicense"
+              "$ref": "#/$defs/FixedTextCatalogLicense"
             },
             {
               "$ref": "#/$defs/UnknownCatalogLicense"
@@ -762,12 +759,28 @@
         "text"
       ]
     },
-    "CC0License": {
+    "FixedTextCatalogLicense": {
       "type": "object",
       "properties": {
         "type": {
-          "type": "string",
-          "const": "CC0-1.0",
+          "anyOf": [
+            {
+              "type": "string",
+              "const": "CC0-1.0"
+            },
+            {
+              "type": "string",
+              "const": "GPL-2.0"
+            },
+            {
+              "type": "string",
+              "const": "GPL-3.0"
+            },
+            {
+              "type": "string",
+              "const": "Unlicense"
+            }
+          ],
           "description": "ライセンスの種類"
         }
       },
