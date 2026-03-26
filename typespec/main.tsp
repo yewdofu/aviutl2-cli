@@ -289,7 +289,8 @@ alias CatalogLicense =
   | TemplateCatalogLicense
   | CustomCatalogLicense
   | FixedTextCatalogLicense
-  | UnknownCatalogLicense;
+  | UnknownCatalogLicense
+  | OtherCatalogLicense;
 
 alias CatalogDownloadSource =
   | {
