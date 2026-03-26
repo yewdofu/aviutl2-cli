@@ -8,7 +8,11 @@ use crate::{
     util::{copy_to_destination, create_zip, fill_template, release_stage_dir},
 };
 
-pub fn run(profile: Option<String>, set_version: Option<String>, opts: &ConfigLoadOpts) -> Result<()> {
+pub fn run(
+    profile: Option<String>,
+    set_version: Option<String>,
+    opts: &ConfigLoadOpts,
+) -> Result<()> {
     let mut config = load_config(opts)?;
     if let Some(version) = set_version {
         config.project.version = version;
@@ -345,9 +349,12 @@ fn map_license(license: &config::CatalogLicense) -> Result<catalog_schema::Licen
             copyrights: vec![],
             license_body: Some(resolve_license_text(&custom.text)?),
         },
-        config::CatalogLicense::Cc0(cc0) => catalog_schema::License {
-            license_type: match cc0.license_type {
-                config::CC0LicenseType::Cc0 => "CC0-1.0",
+        config::CatalogLicense::Fixed(license) => catalog_schema::License {
+            license_type: match license.license_type {
+                config::FixedCatalogLicenseType::Cc0_10 => "CC0-1.0",
+                config::FixedCatalogLicenseType::Gpl20 => "GPL-2.0",
+                config::FixedCatalogLicenseType::Gpl30 => "GPL-3.0",
+                config::FixedCatalogLicenseType::Unlicense => "Unlicense",
             }
             .to_string(),
             is_custom: false,

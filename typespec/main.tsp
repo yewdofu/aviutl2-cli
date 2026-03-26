@@ -264,9 +264,9 @@ model CustomCatalogLicense {
   text: CatalogLicenseText;
 }
 
-model CC0License {
+model FixedTextCatalogLicense {
   /** ライセンスの種類 */
-  type: "CC0-1.0";
+  type: "CC0-1.0" | "GPL-2.0" | "GPL-3.0" | "Unlicense";
 }
 
 model OtherCatalogLicense {
@@ -288,8 +288,7 @@ model UnknownCatalogLicense {
 alias CatalogLicense =
   | TemplateCatalogLicense
   | CustomCatalogLicense
-  | CC0License
-  | CustomCatalogLicense
+  | FixedTextCatalogLicense
   | UnknownCatalogLicense;
 
 alias CatalogDownloadSource =

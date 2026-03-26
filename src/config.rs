@@ -313,7 +313,7 @@ pub enum CatalogDescriptionType {
 pub enum CatalogLicense {
     Template(TemplateCatalogLicense),
     Custom(CustomCatalogLicense),
-    Cc0(CC0License),
+    Fixed(FixedCatalogLicense),
     Other(OtherCatalogLicense),
     Unknown(UnknownCatalogLicense),
 }
@@ -336,9 +336,9 @@ pub struct CustomCatalogLicense {
 }
 
 #[derive(Deserialize, Serialize, Clone, PartialEq)]
-pub struct CC0License {
+pub struct FixedCatalogLicense {
     #[serde(rename = "type")]
-    pub license_type: CC0LicenseType,
+    pub license_type: FixedCatalogLicenseType,
 }
 
 #[derive(Deserialize, Serialize, Clone, PartialEq)]
@@ -368,9 +368,15 @@ pub enum TemplateCatalogLicenseType {
 }
 
 #[derive(Deserialize, Serialize, Clone, PartialEq)]
-pub enum CC0LicenseType {
+pub enum FixedCatalogLicenseType {
     #[serde(rename = "CC0-1.0")]
-    Cc0,
+    Cc0_10,
+    #[serde(rename = "GPL-2.0")]
+    Gpl20,
+    #[serde(rename = "GPL-3.0")]
+    Gpl30,
+    #[serde(rename = "Unlicense")]
+    Unlicense,
 }
 
 #[derive(Deserialize, Serialize, Clone, PartialEq)]
