@@ -320,7 +320,14 @@
           "description": "説明文へのパス"
         },
         "license_path": {
-          "type": "string",
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/CatalogLicensePath"
+            }
+          ],
           "description": "ライセンスへのパス"
         },
         "download_repo": {
@@ -399,6 +406,60 @@
       },
       "required": [
         "id"
+      ]
+    },
+    "CatalogLicensePath": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "anyOf": [
+            {
+              "type": "string",
+              "const": "MIT"
+            },
+            {
+              "type": "string",
+              "const": "Apache-2.0"
+            },
+            {
+              "type": "string",
+              "const": "BSD-2-Clause"
+            },
+            {
+              "type": "string",
+              "const": "BSD-3-Clause"
+            },
+            {
+              "type": "string",
+              "const": "CC0-1.0"
+            },
+            {
+              "type": "string",
+              "const": "GPL-2.0"
+            },
+            {
+              "type": "string",
+              "const": "GPL-3.0"
+            },
+            {
+              "type": "string",
+              "const": "Unlicense"
+            },
+            {
+              "type": "string",
+              "const": "custom"
+            }
+          ],
+          "description": "ライセンス種別"
+        },
+        "path": {
+          "type": "string",
+          "description": "ライセンス本文へのパス"
+        }
+      },
+      "required": [
+        "type",
+        "path"
       ]
     },
     "PlacementMethod": {

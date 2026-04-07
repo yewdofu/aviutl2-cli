@@ -2,6 +2,28 @@ use serde::{Deserialize, Serialize};
 
 /* ---------- primitives ---------- */
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum LicenseType {
+    #[serde(rename = "MIT")]
+    Mit,
+    #[serde(rename = "Apache-2.0")]
+    Apache20,
+    #[serde(rename = "BSD-2-Clause")]
+    Bsd2Clause,
+    #[serde(rename = "BSD-3-Clause")]
+    Bsd3Clause,
+    #[serde(rename = "CC0-1.0")]
+    Cc010,
+    #[serde(rename = "GPL-2.0")]
+    Gpl20,
+    #[serde(rename = "GPL-3.0")]
+    Gpl30,
+    #[serde(rename = "Unlicense")]
+    Unlicense,
+    #[serde(rename = "custom")]
+    Custom,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Copyright {
     pub years: String,
@@ -11,7 +33,7 @@ pub struct Copyright {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct License {
     #[serde(rename = "type")]
-    pub license_type: String,
+    pub license_type: LicenseType,
 
     #[serde(rename = "isCustom")]
     pub is_custom: bool,

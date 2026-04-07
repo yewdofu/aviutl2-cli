@@ -139,7 +139,10 @@ id = "sevenc-nanashi.my-plugin"
 # 説明文（Markdown）へのパス
 description_path = "./README.md"
 # ライセンス
+# 文字列指定時は本文から自動検出
 license_path = "./LICENSE"
+# 明示指定も可能
+# license_path = { type = "MIT", path = "./LICENSE" }
 # ダウンロード元のリポジトリ
 download_repo = { owner = "sevenc-nanashi", repo = "tinted-aviutl2" }
 ```

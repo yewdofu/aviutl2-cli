@@ -192,16 +192,21 @@ fn build_catalog_index(
         entry.insert("description".to_string(), Value::String(description));
     }
     if let Some(license_path) = &catalog.license_path {
-        let license = fs::read_to_string(license_path).with_context(|| {
+        let license_path_str = match license_path {
+            config::CatalogLicensePath::Simple(path) => path,
+            config::CatalogLicensePath::Detailed(def) => &def.path,
+        };
+        let license = fs::read_to_string(license_path_str).with_context(|| {
             format!(
                 "ライセンスファイルの読み込みに失敗しました: {}",
-                license_path
+                license_path_str
             )
         })?;
+        let license_type = resolve_license_type(license_path, &license);
         entry.insert(
             "licenses".to_string(),
             json!([{
-                "type": "custom",
+                "type": license_type,
                 "isCustom": true,
                 "copyrights": [],
                 "licenseBody": license
@@ -210,6 +215,95 @@ fn build_catalog_index(
     }
 
     Ok(Value::Array(vec![Value::Object(entry)]))
+}
+
+fn resolve_license_type(
+    license_path: &config::CatalogLicensePath,
+    license_body: &str,
+) -> catalog_schema::LicenseType {
+    let specified_license_type = match license_path {
+        config::CatalogLicensePath::Simple(_) => None,
+        config::CatalogLicensePath::Detailed(def) => Some(def.license_type),
+    };
+    let detected_license_type = detect_license_type(license_body);
+    if detected_license_type == catalog_schema::LicenseType::Custom
+        && specified_license_type.is_none()
+    {
+        tracing::warn!("ライセンスの種別の自動検出に失敗しました。");
+    }
+    if let Some(specified) = specified_license_type
+        && detected_license_type != catalog_schema::LicenseType::Custom
+        && specified != detected_license_type
+    {
+        tracing::warn!(
+            "指定されたライセンスタイプと検出されたライセンスタイプが一致しません。指定: {:?}, 検出: {:?}",
+            specified,
+            detected_license_type
+        );
+    }
+    specified_license_type.unwrap_or(detected_license_type)
+}
+
+fn detect_license_type(license_body: &str) -> catalog_schema::LicenseType {
+    let normalized = normalize_license_text(license_body);
+
+    if normalized.contains("apache license")
+        && normalized.contains("version 2.0, january 2004")
+        && normalized.contains("apache.org/licenses/license-2.0")
+    {
+        return catalog_schema::LicenseType::Apache20;
+    }
+
+    if normalized.contains("gnu general public license")
+        && normalized.contains("version 3, 29 june 2007")
+    {
+        return catalog_schema::LicenseType::Gpl30;
+    }
+
+    if normalized.contains("gnu general public license")
+        && normalized.contains("version 2, june 1991")
+    {
+        return catalog_schema::LicenseType::Gpl20;
+    }
+
+    if normalized.contains("cc0 1.0 universal")
+        || normalized.contains("creative commons legal code")
+            && normalized.contains("cc0 1.0 universal")
+    {
+        return catalog_schema::LicenseType::Cc010;
+    }
+
+    if normalized
+        .contains("this is free and unencumbered software released into the public domain.")
+    {
+        return catalog_schema::LicenseType::Unlicense;
+    }
+
+    if normalized
+        .contains("permission is hereby granted, free of charge, to any person obtaining a copy")
+    {
+        return catalog_schema::LicenseType::Mit;
+    }
+
+    if normalized.contains("redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:")
+    {
+        if normalized.contains("neither the name of")
+            || normalized.contains("nor the names of its contributors may be used")
+        {
+            return catalog_schema::LicenseType::Bsd3Clause;
+        }
+        return catalog_schema::LicenseType::Bsd2Clause;
+    }
+
+    catalog_schema::LicenseType::Custom
+}
+
+fn normalize_license_text(input: &str) -> String {
+    input
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+        .to_lowercase()
 }
 
 fn build_versions(

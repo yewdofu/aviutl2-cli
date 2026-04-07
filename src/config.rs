@@ -203,8 +203,22 @@ impl Release {
 pub struct Catalog {
     pub id: String,
     pub description_path: Option<String>,
-    pub license_path: Option<String>,
+    pub license_path: Option<CatalogLicensePath>,
     pub download_repo: Option<CatalogDownloadRepo>,
+}
+
+#[derive(Deserialize, Serialize, Clone, PartialEq)]
+#[serde(untagged)]
+pub enum CatalogLicensePath {
+    Simple(String),
+    Detailed(CatalogLicenseDef),
+}
+
+#[derive(Deserialize, Serialize, Clone, PartialEq)]
+pub struct CatalogLicenseDef {
+    #[serde(rename = "type")]
+    pub license_type: crate::catalog_schema::LicenseType,
+    pub path: String,
 }
 
 #[derive(Deserialize, Serialize, Clone, PartialEq)]
