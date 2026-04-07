@@ -290,7 +290,7 @@ fn e2e_release_catalog_warns_when_license_detection_falls_back_to_custom() -> an
         .arg("release")
         .assert()
         .success()
-        .stdout(contains("ライセンス種別は custom として出力されます"));
+        .stdout(contains("ライセンスの種別の自動検出に失敗しました。"));
 
     let catalog_json_path = project_dir.join("release").join("catalog.json");
     let content = fs::read_to_string(&catalog_json_path)?;
