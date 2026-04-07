@@ -202,229 +202,15 @@ impl Release {
 #[derive(Deserialize, Serialize, Clone, PartialEq)]
 pub struct Catalog {
     pub id: String,
-    pub name: String,
-    #[serde(rename = "type")]
-    pub catalog_type: CatalogType,
-    pub author: String,
-    pub original_author: Option<String>,
-    pub niconi_commons_id: Option<String>,
-    pub summary: String,
-    pub homepage: String,
-    pub dependencies: Option<Vec<String>>,
-    pub tags: Option<Vec<String>>,
-    pub description: CatalogDescription,
-    pub license: CatalogLicense,
-    pub download_source: CatalogDownloadSource,
-    pub install_steps: Option<Vec<CatalogAction>>,
-    pub uninstall_steps: Option<Vec<CatalogAction>>,
-}
-
-#[derive(Clone, PartialEq)]
-pub enum CatalogType {
-    Output,
-    Input,
-    Filter,
-    Common,
-    Modification,
-    Script,
-    Language,
-    Other,
-    Custom(String),
-}
-
-impl<'de> Deserialize<'de> for CatalogType {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        let s = String::deserialize(deserializer)?;
-        let catalog_type = match s.as_str() {
-            "output" => CatalogType::Output,
-            "input" => CatalogType::Input,
-            "filter" => CatalogType::Filter,
-            "common" => CatalogType::Common,
-            "modification" => CatalogType::Modification,
-            "script" => CatalogType::Script,
-            "language" => CatalogType::Language,
-            "other" => CatalogType::Other,
-            custom => CatalogType::Custom(custom.to_string()),
-        };
-        Ok(catalog_type)
-    }
-}
-impl Serialize for CatalogType {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        let s = match self {
-            CatalogType::Output => "output",
-            CatalogType::Input => "input",
-            CatalogType::Filter => "filter",
-            CatalogType::Common => "common",
-            CatalogType::Modification => "modification",
-            CatalogType::Script => "script",
-            CatalogType::Language => "language",
-            CatalogType::Other => "other",
-            CatalogType::Custom(custom) => custom.as_str(),
-        };
-        serializer.serialize_str(s)
-    }
+    pub description_path: Option<String>,
+    pub license_path: Option<String>,
+    pub download_repo: Option<CatalogDownloadRepo>,
 }
 
 #[derive(Deserialize, Serialize, Clone, PartialEq)]
-#[serde(tag = "type", rename_all = "snake_case")]
-pub enum CatalogLicenseText {
-    Inline { content: String },
-    File { path: String },
-}
-
-#[derive(Deserialize, Serialize, Clone, PartialEq)]
-#[serde(untagged)]
-pub enum CatalogDescription {
-    Plain(String),
-    Url(CatalogDescriptionUrl),
-    Inline(CatalogDescriptionInline),
-}
-
-#[derive(Deserialize, Serialize, Clone, PartialEq)]
-pub struct CatalogDescriptionUrl {
-    #[serde(rename = "type")]
-    pub description_type: CatalogDescriptionType,
-    pub url: String,
-}
-
-#[derive(Deserialize, Serialize, Clone, PartialEq)]
-pub struct CatalogDescriptionInline {
-    #[serde(rename = "type")]
-    pub description_type: CatalogDescriptionType,
-    pub content: String,
-}
-
-#[derive(Deserialize, Serialize, Clone, PartialEq)]
-#[serde(rename_all = "snake_case")]
-pub enum CatalogDescriptionType {
-    Url,
-    Inline,
-}
-
-#[derive(Deserialize, Serialize, Clone, PartialEq)]
-#[serde(untagged)]
-pub enum CatalogLicense {
-    Template(TemplateCatalogLicense),
-    Custom(CustomCatalogLicense),
-    Fixed(FixedCatalogLicense),
-    Other(OtherCatalogLicense),
-    Unknown(UnknownCatalogLicense),
-}
-
-#[derive(Deserialize, Serialize, Clone, PartialEq)]
-pub struct TemplateCatalogLicense {
-    #[serde(rename = "type")]
-    pub license_type: TemplateCatalogLicenseType,
-    pub template: serde_constant::ConstBool<true>,
-    pub author: String,
-    pub year: String,
-}
-
-#[derive(Deserialize, Serialize, Clone, PartialEq)]
-pub struct CustomCatalogLicense {
-    #[serde(rename = "type")]
-    pub license_type: TemplateCatalogLicenseType,
-    pub template: serde_constant::ConstBool<false>,
-    pub text: CatalogLicenseText,
-}
-
-#[derive(Deserialize, Serialize, Clone, PartialEq)]
-pub struct FixedCatalogLicense {
-    #[serde(rename = "type")]
-    pub license_type: FixedCatalogLicenseType,
-}
-
-#[derive(Deserialize, Serialize, Clone, PartialEq)]
-pub struct OtherCatalogLicense {
-    #[serde(rename = "type")]
-    pub license_type: OtherCatalogLicenseType,
-    pub name: Option<String>,
-    pub text: CatalogLicenseText,
-}
-
-#[derive(Deserialize, Serialize, Clone, PartialEq)]
-pub struct UnknownCatalogLicense {
-    #[serde(rename = "type")]
-    pub license_type: UnknownCatalogLicenseType,
-}
-
-#[derive(Deserialize, Serialize, Clone, PartialEq)]
-pub enum TemplateCatalogLicenseType {
-    #[serde(rename = "MIT")]
-    Mit,
-    #[serde(rename = "Apache-2.0")]
-    Apache20,
-    #[serde(rename = "BSD-2-Clause")]
-    Bsd2Clause,
-    #[serde(rename = "BSD-3-Clause")]
-    Bsd3Clause,
-}
-
-#[derive(Deserialize, Serialize, Clone, PartialEq)]
-pub enum FixedCatalogLicenseType {
-    #[serde(rename = "CC0-1.0")]
-    Cc0_10,
-    #[serde(rename = "GPL-2.0")]
-    Gpl20,
-    #[serde(rename = "GPL-3.0")]
-    Gpl30,
-    #[serde(rename = "Unlicense")]
-    Unlicense,
-}
-
-#[derive(Deserialize, Serialize, Clone, PartialEq)]
-pub enum OtherCatalogLicenseType {
-    #[serde(rename = "other")]
-    Other,
-}
-
-#[derive(Deserialize, Serialize, Clone, PartialEq)]
-pub enum UnknownCatalogLicenseType {
-    #[serde(rename = "unknown")]
-    Unknown,
-}
-
-#[derive(Deserialize, Serialize, Clone, PartialEq)]
-#[serde(tag = "type")]
-pub enum CatalogDownloadSource {
-    #[serde(rename = "direct")]
-    Direct { url: String },
-    #[serde(rename = "booth")]
-    Booth { url: String },
-    #[serde(rename = "github")]
-    Github {
-        owner: String,
-        repo: String,
-        pattern: Option<String>,
-    },
-    #[serde(rename = "google_drive")]
-    GoogleDrive { id: String },
-}
-
-#[derive(Deserialize, Serialize, Clone, PartialEq)]
-#[serde(tag = "action")]
-pub enum CatalogAction {
-    #[serde(rename = "download")]
-    Download,
-    #[serde(rename = "extract")]
-    Extract,
-    #[serde(rename = "copy")]
-    Copy { from: String, to: String },
-    #[serde(rename = "delete")]
-    Delete { path: String },
-    #[serde(rename = "run")]
-    Run {
-        path: String,
-        args: Vec<String>,
-        elevate: Option<bool>,
-    },
+pub struct CatalogDownloadRepo {
+    pub owner: String,
+    pub repo: String,
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq)]
@@ -458,7 +244,6 @@ pub struct ConfigLoadOpts {
     pub override_path: Option<String>,
 }
 
-
 pub fn load_config(opts: &ConfigLoadOpts) -> Result<Config> {
     if opts.patch.is_some() && opts.override_path.is_some() {
         bail!("-c と -C は同時に指定できません");
@@ -469,17 +254,21 @@ pub fn load_config(opts: &ConfigLoadOpts) -> Result<Config> {
         let abs_path = path
             .canonicalize()
             .with_context(|| format!("ファイルが見つかりません: {}", path.display()))?;
-        let parent = abs_path
-            .parent()
-            .with_context(|| format!("親ディレクトリの取得に失敗しました: {}", abs_path.display()))?;
+        let parent = abs_path.parent().with_context(|| {
+            format!("親ディレクトリの取得に失敗しました: {}", abs_path.display())
+        })?;
         std::env::set_current_dir(parent).with_context(|| {
             format!(
                 "カレントディレクトリの変更に失敗しました: {}",
                 parent.display()
             )
         })?;
-        fs::read_to_string(&abs_path)
-            .with_context(|| format!("設定ファイルの読み込みに失敗しました: {}", abs_path.display()))?
+        fs::read_to_string(&abs_path).with_context(|| {
+            format!(
+                "設定ファイルの読み込みに失敗しました: {}",
+                abs_path.display()
+            )
+        })?
     } else {
         let path = find_and_cd_to_project()?;
         fs::read_to_string(&path)
@@ -499,7 +288,8 @@ pub fn load_config(opts: &ConfigLoadOpts) -> Result<Config> {
         let patch: toml::Value =
             toml::from_str(&patch_content).with_context(|| "パッチファイルの解析に失敗しました")?;
         merge_toml(&mut base, patch);
-        let merged = toml::to_string(&base).with_context(|| "設定ファイルのシリアライズに失敗しました")?;
+        let merged =
+            toml::to_string(&base).with_context(|| "設定ファイルのシリアライズに失敗しました")?;
         toml::from_str(&merged).with_context(|| "設定ファイルの解析に失敗しました")
     } else {
         toml::from_str(&content).with_context(|| "設定ファイルの解析に失敗しました")

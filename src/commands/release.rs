@@ -152,38 +152,64 @@ fn build_catalog_index(
     stage_dir: &std::path::Path,
     versions: &[catalog_schema::Version],
     generated_pattern: &str,
-) -> Result<catalog_schema::CatalogIndex> {
-    let install_steps = if let Some(steps) = &catalog.install_steps {
-        steps.iter().map(map_action).collect::<Vec<_>>()
-    } else {
-        default_install_steps(stage_dir)?
-    };
-    let uninstall_steps = if let Some(steps) = &catalog.uninstall_steps {
-        steps.iter().map(map_action).collect::<Vec<_>>()
-    } else {
-        default_uninstall_steps(&install_steps)?
-    };
-    Ok(vec![catalog_schema::CatalogEntry {
-        id: catalog.id.clone(),
-        name: catalog.name.clone(),
-        entry_type: map_catalog_type(&catalog.catalog_type),
-        summary: catalog.summary.clone(),
-        description: map_description(&catalog.description),
-        author: catalog.author.clone(),
-        original_author: catalog.original_author.clone(),
-        repo_url: catalog.homepage.clone(),
-        licenses: vec![map_license(&catalog.license)?],
-        niconi_commons_id: catalog.niconi_commons_id.clone(),
-        tags: catalog.tags.clone().unwrap_or_default(),
-        dependencies: catalog.dependencies.clone().unwrap_or_default(),
-        images: Vec::<catalog_schema::Image>::new(),
-        installer: catalog_schema::Installer {
-            source: map_source(&catalog.download_source, generated_pattern),
-            install: install_steps,
-            uninstall: uninstall_steps,
-        },
-        version: versions.to_vec(),
-    }])
+) -> Result<serde_json::Value> {
+    use serde_json::{Map, Value, json};
+
+    let install_steps = default_install_steps(stage_dir)?;
+    let uninstall_steps = default_uninstall_steps(&install_steps)?;
+
+    let mut installer = Map::new();
+    installer.insert("install".to_string(), serde_json::to_value(&install_steps)?);
+    installer.insert(
+        "uninstall".to_string(),
+        serde_json::to_value(&uninstall_steps)?,
+    );
+    if let Some(download_repo) = &catalog.download_repo {
+        installer.insert(
+            "source".to_string(),
+            json!({
+                "github": {
+                    "owner": download_repo.owner.clone(),
+                    "repo": download_repo.repo.clone(),
+                    "pattern": generated_pattern,
+                }
+            }),
+        );
+    }
+
+    let mut entry = Map::new();
+    entry.insert("id".to_string(), Value::String(catalog.id.clone()));
+    entry.insert("version".to_string(), serde_json::to_value(versions)?);
+    entry.insert("installer".to_string(), Value::Object(installer));
+
+    if let Some(description_path) = &catalog.description_path {
+        let description = fs::read_to_string(description_path).with_context(|| {
+            format!(
+                "説明文ファイルの読み込みに失敗しました: {}",
+                description_path
+            )
+        })?;
+        entry.insert("description".to_string(), Value::String(description));
+    }
+    if let Some(license_path) = &catalog.license_path {
+        let license = fs::read_to_string(license_path).with_context(|| {
+            format!(
+                "ライセンスファイルの読み込みに失敗しました: {}",
+                license_path
+            )
+        })?;
+        entry.insert(
+            "licenses".to_string(),
+            json!([{
+                "type": "custom",
+                "isCustom": true,
+                "copyrights": [],
+                "licenseBody": license
+            }]),
+        );
+    }
+
+    Ok(Value::Array(vec![Value::Object(entry)]))
 }
 
 fn build_versions(
@@ -296,136 +322,6 @@ fn normalize_path_separator(path: &std::path::Path) -> String {
     replaced.strip_prefix("./").unwrap_or(&replaced).to_string()
 }
 
-fn map_catalog_type(catalog_type: &config::CatalogType) -> catalog_schema::CatalogEntryType {
-    match catalog_type {
-        config::CatalogType::Output => catalog_schema::CatalogEntryType::Output,
-        config::CatalogType::Input => catalog_schema::CatalogEntryType::Input,
-        config::CatalogType::Filter => catalog_schema::CatalogEntryType::Filter,
-        config::CatalogType::Common => catalog_schema::CatalogEntryType::Common,
-        config::CatalogType::Modification => catalog_schema::CatalogEntryType::Modification,
-        config::CatalogType::Script => catalog_schema::CatalogEntryType::Script,
-        config::CatalogType::Language => catalog_schema::CatalogEntryType::Script,
-        config::CatalogType::Other => catalog_schema::CatalogEntryType::Other,
-        config::CatalogType::Custom(custom) => {
-            catalog_schema::CatalogEntryType::Custom(custom.clone())
-        }
-    }
-}
-
-fn map_description(description: &config::CatalogDescription) -> String {
-    match description {
-        config::CatalogDescription::Plain(value) => value.clone(),
-        config::CatalogDescription::Url(value) => value.url.clone(),
-        config::CatalogDescription::Inline(value) => value.content.clone(),
-    }
-}
-
-fn map_license(license: &config::CatalogLicense) -> Result<catalog_schema::License> {
-    Ok(match license {
-        config::CatalogLicense::Template(template) => catalog_schema::License {
-            license_type: match template.license_type {
-                config::TemplateCatalogLicenseType::Mit => "MIT",
-                config::TemplateCatalogLicenseType::Apache20 => "Apache-2.0",
-                config::TemplateCatalogLicenseType::Bsd2Clause => "BSD-2-Clause",
-                config::TemplateCatalogLicenseType::Bsd3Clause => "BSD-3-Clause",
-            }
-            .to_string(),
-            is_custom: false,
-            copyrights: vec![catalog_schema::Copyright {
-                years: template.year.clone(),
-                holder: template.author.clone(),
-            }],
-            license_body: None,
-        },
-        config::CatalogLicense::Custom(custom) => catalog_schema::License {
-            license_type: match custom.license_type {
-                config::TemplateCatalogLicenseType::Mit => "MIT",
-                config::TemplateCatalogLicenseType::Apache20 => "Apache-2.0",
-                config::TemplateCatalogLicenseType::Bsd2Clause => "BSD-2-Clause",
-                config::TemplateCatalogLicenseType::Bsd3Clause => "BSD-3-Clause",
-            }
-            .to_string(),
-            is_custom: true,
-            copyrights: vec![],
-            license_body: Some(resolve_license_text(&custom.text)?),
-        },
-        config::CatalogLicense::Fixed(license) => catalog_schema::License {
-            license_type: match license.license_type {
-                config::FixedCatalogLicenseType::Cc0_10 => "CC0-1.0",
-                config::FixedCatalogLicenseType::Gpl20 => "GPL-2.0",
-                config::FixedCatalogLicenseType::Gpl30 => "GPL-3.0",
-                config::FixedCatalogLicenseType::Unlicense => "Unlicense",
-            }
-            .to_string(),
-            is_custom: false,
-            copyrights: vec![],
-            license_body: None,
-        },
-        config::CatalogLicense::Other(other) => catalog_schema::License {
-            license_type: match other.name.as_deref() {
-                Some("custom") | None => "カスタムライセンス".to_string(),
-                Some(name) => name.to_string(),
-            },
-            is_custom: true,
-            copyrights: vec![],
-            license_body: Some(resolve_license_text(&other.text)?),
-        },
-        config::CatalogLicense::Unknown(unknown) => catalog_schema::License {
-            license_type: match unknown.license_type {
-                config::UnknownCatalogLicenseType::Unknown => "不明",
-            }
-            .to_string(),
-            is_custom: false,
-            copyrights: vec![],
-            license_body: None,
-        },
-    })
-}
-
-fn resolve_license_text(text: &config::CatalogLicenseText) -> Result<String> {
-    match text {
-        config::CatalogLicenseText::Inline { content } => Ok(content.clone()),
-        config::CatalogLicenseText::File { path } => {
-            let content = fs::read_to_string(path)
-                .with_context(|| format!("ライセンスファイルの読み込みに失敗しました: {}", path))?;
-            Ok(content)
-        }
-    }
-}
-
-fn map_source(
-    source: &config::CatalogDownloadSource,
-    generated_pattern: &str,
-) -> catalog_schema::InstallerSource {
-    match source {
-        config::CatalogDownloadSource::Direct { url } => catalog_schema::InstallerSource::Direct {
-            direct: url.clone(),
-        },
-        config::CatalogDownloadSource::Booth { url } => {
-            catalog_schema::InstallerSource::Booth { booth: url.clone() }
-        }
-        config::CatalogDownloadSource::Github {
-            owner,
-            repo,
-            pattern,
-        } => catalog_schema::InstallerSource::Github {
-            github: catalog_schema::GithubSource {
-                owner: owner.clone(),
-                repo: repo.clone(),
-                pattern: pattern
-                    .as_ref()
-                    .cloned()
-                    .unwrap_or_else(|| generated_pattern.to_string()),
-            },
-        },
-        config::CatalogDownloadSource::GoogleDrive { id } => {
-            catalog_schema::InstallerSource::GoogleDrive {
-                google_drive: catalog_schema::GoogleDriveSource { id: id.clone() },
-            }
-        }
-    }
-}
-
 fn generate_au2pkg_pattern(project: &crate::config::Project, zip_base: Option<&str>) -> String {
     let default_zip_name = crate::config::Release::default_zip_name();
     let zip_base = zip_base.unwrap_or(&default_zip_name);
@@ -464,27 +360,4 @@ fn regex_escape(input: &str) -> String {
         }
     }
     output
-}
-
-fn map_action(action: &config::CatalogAction) -> catalog_schema::InstallerAction {
-    match action {
-        config::CatalogAction::Download => catalog_schema::InstallerAction::Download {},
-        config::CatalogAction::Extract => catalog_schema::InstallerAction::Extract {},
-        config::CatalogAction::Copy { from, to } => catalog_schema::InstallerAction::Copy {
-            from: from.clone(),
-            to: to.clone(),
-        },
-        config::CatalogAction::Delete { path } => {
-            catalog_schema::InstallerAction::Delete { path: path.clone() }
-        }
-        config::CatalogAction::Run {
-            path,
-            args,
-            elevate,
-        } => catalog_schema::InstallerAction::Run {
-            path: path.clone(),
-            args: args.clone(),
-            elevate: *elevate,
-        },
-    }
 }

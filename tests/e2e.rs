@@ -126,25 +126,16 @@ fn e2e_release_writes_catalog_json() -> anyhow::Result<()> {
 
                [catalog]
                id = "my-plugin"
-               name = "My Plugin"
-               type = "filter"
-               author = "nanashi"
-               summary = "summary"
-               homepage = "https://example.com"
-               description = "desc"
-
-               [catalog.license]
-               type = "CC0-1.0"
-
-               [catalog.download_source]
-               type = "github"
-               owner = "sevenc-nanashi"
-               repo = "aviutl2-cli"
+               description_path = "README.md"
+               license_path = "LICENSE"
+               download_repo = { owner = "sevenc-nanashi", repo = "aviutl2-cli" }
 
                [release]
                "#
         ),
     )?;
+    write_file(&project_dir.join("README.md"), "desc")?;
+    write_file(&project_dir.join("LICENSE"), "license text")?;
 
     Command::new(assert_cmd::cargo::cargo_bin!("au2"))
         .current_dir(&project_dir)
@@ -157,6 +148,10 @@ fn e2e_release_writes_catalog_json() -> anyhow::Result<()> {
     let content = fs::read_to_string(&catalog_json_path)?;
     let json: serde_json::Value = serde_json::from_str(&content)?;
     assert_eq!(json[0]["id"], "my-plugin");
+    assert_eq!(json[0]["description"], "desc");
+    assert_eq!(json[0]["licenses"][0]["type"], "custom");
+    assert_eq!(json[0]["licenses"][0]["isCustom"], true);
+    assert_eq!(json[0]["licenses"][0]["licenseBody"], "license text");
     assert_eq!(
         json[0]["installer"]["source"]["github"]["repo"],
         "aviutl2-cli"
@@ -180,6 +175,99 @@ fn e2e_release_writes_catalog_json() -> anyhow::Result<()> {
             .len()
             == 32
     );
+
+    Ok(())
+}
+
+#[test]
+fn e2e_release_catalog_omits_optional_keys_when_paths_are_missing() -> anyhow::Result<()> {
+    let temp = tempdir()?;
+    let project_dir = temp.path().join("catalog_omit_project");
+    fs::create_dir_all(&project_dir)?;
+    fs::create_dir_all(project_dir.join("dist"))?;
+    write_file(
+        &project_dir.join("dist").join("plugin.auf"),
+        "dummy-binary-content",
+    )?;
+
+    write_file(
+        &project_dir.join("aviutl2.toml"),
+        dedent::dedent!(
+            r#"[project]
+               id = "sevenc-nanashi.aviutl2-cli.catalog-omit-project"
+               name = "catalog-omit-project"
+               version = "1.2.3"
+
+               [artifacts.plugin]
+               source = "dist/plugin.auf"
+               destination = "Plugin/plugin.auf"
+               placement_method = "copy"
+
+               [catalog]
+               id = "my-plugin"
+
+               [release]
+               "#
+        ),
+    )?;
+
+    Command::new(assert_cmd::cargo::cargo_bin!("au2"))
+        .current_dir(&project_dir)
+        .arg("release")
+        .assert()
+        .success();
+
+    let catalog_json_path = project_dir.join("release").join("catalog.json");
+    let content = fs::read_to_string(&catalog_json_path)?;
+    let json: serde_json::Value = serde_json::from_str(&content)?;
+    assert!(json[0].get("description").is_none());
+    assert!(json[0].get("licenses").is_none());
+    assert!(json[0]["installer"].get("source").is_none());
+    assert!(json[0]["installer"].get("install").is_some());
+    assert!(json[0]["installer"].get("uninstall").is_some());
+
+    Ok(())
+}
+
+#[test]
+fn e2e_release_fails_when_catalog_path_is_invalid() -> anyhow::Result<()> {
+    let temp = tempdir()?;
+    let project_dir = temp.path().join("catalog_invalid_path_project");
+    fs::create_dir_all(&project_dir)?;
+    fs::create_dir_all(project_dir.join("dist"))?;
+    write_file(
+        &project_dir.join("dist").join("plugin.auf"),
+        "dummy-binary-content",
+    )?;
+
+    write_file(
+        &project_dir.join("aviutl2.toml"),
+        dedent::dedent!(
+            r#"[project]
+               id = "sevenc-nanashi.aviutl2-cli.catalog-invalid-path-project"
+               name = "catalog-invalid-path-project"
+               version = "1.2.3"
+
+               [artifacts.plugin]
+               source = "dist/plugin.auf"
+               destination = "Plugin/plugin.auf"
+               placement_method = "copy"
+
+               [catalog]
+               id = "my-plugin"
+               license_path = "MISSING_LICENSE"
+
+               [release]
+               "#
+        ),
+    )?;
+
+    Command::new(assert_cmd::cargo::cargo_bin!("au2"))
+        .current_dir(&project_dir)
+        .arg("release")
+        .assert()
+        .failure()
+        .stdout(contains("ライセンスファイルの読み込みに失敗しました"));
 
     Ok(())
 }
@@ -236,7 +324,10 @@ fn e2e_config_patch_overrides_version() -> anyhow::Result<()> {
     let old_zip_path = project_dir
         .join("release")
         .join("sevenc-nanashi.aviutl2-cli.config-patch-project-v0.1.0.au2pkg.zip");
-    assert!(!old_zip_path.exists(), "元のバージョンのzipは存在しないはず");
+    assert!(
+        !old_zip_path.exists(),
+        "元のバージョンのzipは存在しないはず"
+    );
 
     Ok(())
 }

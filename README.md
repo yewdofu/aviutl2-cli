@@ -136,30 +136,12 @@ include = ["my_plugin_aul2", "my_plugin_aux2"]
 [catalog]
 # プラグインID
 id = "sevenc-nanashi.my-plugin"
-# プラグイン名
-name = "My AviUtl2 Plugin"
-# 作者名
-author = "Nanashi."
-# 種類
-# "common" / "effect" / "input" / "output" / "script" / "modification"
-type = "common"
-# パッケージのサイト
-homepage = "https://github.com/sevenc-nanashi/tinted-aviutl2"
-# ニコニ・コモンズID
-niconi_commons_id = "sm45904404"
-# タグ
-tags = ["UI"]
-# 概要
-summary = "ぼくのかんがえたさいきょうのAviUtl2プラグイン"
-
-# 詳細説明
-description = { type = "url", url = "https://raw.githubusercontent.com/sevenc-nanashi/tinted-aviutl2/main/README.md" }
-
+# 説明文（Markdown）へのパス
+description_path = "./README.md"
 # ライセンス
-license = { type = "MIT", template = false, text = { type = "file", path = "./LICENSE" } }
-
-# ダウンロード元
-download_source = { type = "github", owner = "sevenc-nanashi", repo = "tinted-aviutl2" }
+license_path = "./LICENSE"
+# ダウンロード元のリポジトリ
+download_repo = { owner = "sevenc-nanashi", repo = "tinted-aviutl2" }
 ```
 
 </details>

@@ -81,7 +81,12 @@ fn init_config(install_dir: &std::path::Path) -> Result<()> {
     Ok(())
 }
 
-pub fn artifacts(force: bool, profile: Option<String>, refresh: bool, opts: &ConfigLoadOpts) -> Result<()> {
+pub fn artifacts(
+    force: bool,
+    profile: Option<String>,
+    refresh: bool,
+    opts: &ConfigLoadOpts,
+) -> Result<()> {
     let config = load_config(opts)?;
     let dev = config
         .development

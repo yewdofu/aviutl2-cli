@@ -6,7 +6,8 @@ use crate::{catalog_schema::CatalogIndexEntry, config::CatalogDependency};
 pub fn load_catalog_index(
     refresh: bool,
 ) -> anyhow::Result<std::collections::HashMap<String, CatalogIndexEntry>> {
-    std::fs::create_dir_all(".aviutl2-cli").context("カタログの保存ディレクトリの作成に失敗しました")?;
+    std::fs::create_dir_all(".aviutl2-cli")
+        .context("カタログの保存ディレクトリの作成に失敗しました")?;
     let path = std::path::PathBuf::from(".aviutl2-cli/catalog-index.json");
     if should_reload_catalog_index(&path, refresh) {
         tracing::info!("カタログを再読み込みします: {}", path.display());
@@ -333,9 +334,7 @@ fn run_catalog_actions(
                 // NOTE:
                 // auo_setup.exeをわざわざ走らせるのは面倒なので、Plugin下のコピーという単純な処理で代替する
 
-                let from_plugin_dir = temp_dir
-                    .path()
-                    .join("Plugin");
+                let from_plugin_dir = temp_dir.path().join("Plugin");
                 let to_plugin_dir = data_root.join("Plugin");
                 anyhow::ensure!(
                     from_plugin_dir.exists(),
