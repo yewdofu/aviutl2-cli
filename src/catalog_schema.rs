@@ -20,7 +20,7 @@ pub enum LicenseType {
     Gpl30,
     #[serde(rename = "Unlicense")]
     Unlicense,
-    #[serde(rename = "custom")]
+    #[serde(rename = "カスタムライセンス")]
     Custom,
 }
 

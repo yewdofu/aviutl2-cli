@@ -295,7 +295,7 @@ fn e2e_release_catalog_warns_when_license_detection_falls_back_to_custom() -> an
     let catalog_json_path = project_dir.join("release").join("catalog.json");
     let content = fs::read_to_string(&catalog_json_path)?;
     let json: serde_json::Value = serde_json::from_str(&content)?;
-    assert_eq!(json[0]["licenses"][0]["type"], "custom");
+    assert_eq!(json[0]["licenses"][0]["type"], "カスタムライセンス");
     assert_eq!(json[0]["licenses"][0]["isCustom"], true);
 
     Ok(())
