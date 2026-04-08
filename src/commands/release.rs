@@ -223,7 +223,7 @@ fn resolve_license_type(
 ) -> catalog_schema::LicenseType {
     let specified_license_type = match license_path {
         config::CatalogLicensePath::Simple(_) => None,
-        config::CatalogLicensePath::Detailed(def) => Some(def.license_type),
+        config::CatalogLicensePath::Detailed(def) => Some(def.license_type.clone()),
     };
     let detected_license_type = detect_license_type(license_body);
     if detected_license_type == catalog_schema::LicenseType::Custom
@@ -231,9 +231,9 @@ fn resolve_license_type(
     {
         tracing::warn!("ライセンスの種別の自動検出に失敗しました。");
     }
-    if let Some(specified) = specified_license_type
+    if let Some(specified) = specified_license_type.as_ref()
         && detected_license_type != catalog_schema::LicenseType::Custom
-        && specified != detected_license_type
+        && specified != &detected_license_type
     {
         tracing::warn!(
             "指定されたライセンスタイプと検出されたライセンスタイプが一致しません。指定: {:?}, 検出: {:?}",

@@ -2,26 +2,60 @@ use serde::{Deserialize, Serialize};
 
 /* ---------- primitives ---------- */
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum LicenseType {
-    #[serde(rename = "MIT")]
     Mit,
-    #[serde(rename = "Apache-2.0")]
     Apache20,
-    #[serde(rename = "BSD-2-Clause")]
     Bsd2Clause,
-    #[serde(rename = "BSD-3-Clause")]
     Bsd3Clause,
-    #[serde(rename = "CC0-1.0")]
     Cc010,
-    #[serde(rename = "GPL-2.0")]
     Gpl20,
-    #[serde(rename = "GPL-3.0")]
     Gpl30,
-    #[serde(rename = "Unlicense")]
     Unlicense,
-    #[serde(rename = "カスタムライセンス")]
     Custom,
+    Other(String),
+}
+
+impl<'de> Deserialize<'de> for LicenseType {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        Ok(match s.as_str() {
+            "MIT" => LicenseType::Mit,
+            "Apache-2.0" => LicenseType::Apache20,
+            "BSD-2-Clause" => LicenseType::Bsd2Clause,
+            "BSD-3-Clause" => LicenseType::Bsd3Clause,
+            "CC0-1.0" => LicenseType::Cc010,
+            "GPL-2.0" => LicenseType::Gpl20,
+            "GPL-3.0" => LicenseType::Gpl30,
+            "Unlicense" => LicenseType::Unlicense,
+            "カスタムライセンス" => LicenseType::Custom,
+            other => LicenseType::Other(other.to_string()),
+        })
+    }
+}
+
+impl Serialize for LicenseType {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let s = match self {
+            LicenseType::Mit => "MIT",
+            LicenseType::Apache20 => "Apache-2.0",
+            LicenseType::Bsd2Clause => "BSD-2-Clause",
+            LicenseType::Bsd3Clause => "BSD-3-Clause",
+            LicenseType::Cc010 => "CC0-1.0",
+            LicenseType::Gpl20 => "GPL-2.0",
+            LicenseType::Gpl30 => "GPL-3.0",
+            LicenseType::Unlicense => "Unlicense",
+            LicenseType::Custom => "カスタムライセンス",
+            LicenseType::Other(other) => other.as_str(),
+        };
+        serializer.serialize_str(s)
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -227,5 +261,30 @@ impl Serialize for CatalogEntryType {
             CatalogEntryType::Custom(custom) => custom.as_str(),
         };
         serializer.serialize_str(s)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::CatalogIndexEntry;
+
+    const CATALOG_INDEX_URL: &str =
+        "https://raw.githubusercontent.com/Neosku/aviutl2-catalog-data/refs/heads/main/index.json";
+
+    #[test]
+    fn actual_catalog_data_can_be_deserialized() -> anyhow::Result<()> {
+        let response = ureq::get(CATALOG_INDEX_URL).call()?;
+        let entries: Vec<CatalogIndexEntry> = response.into_body().read_json()?;
+
+        assert!(!entries.is_empty());
+
+        let first = &entries[0];
+        assert!(!first.id.is_empty());
+        assert!(!first.name.is_empty());
+        assert!(!first.latest_version.is_empty());
+        assert!(!first.licenses.is_empty());
+        assert!(!first.version.is_empty());
+
+        Ok(())
     }
 }
