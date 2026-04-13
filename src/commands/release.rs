@@ -126,11 +126,17 @@ pub(crate) fn prepare_package_files(
             id={id}
             name={name}
             information={information}
+            uninstall_subfolder_file={uninstall_subfolder_file}
             "#
         ),
         id = fill_template(id, project),
         name = fill_template(name, project),
-        information = fill_template(information, project)
+        information = fill_template(information, project),
+        uninstall_subfolder_file = if release_config.uninstall_subfolder_file {
+            "1"
+        } else {
+            "0"
+        }
     );
     fs::write(&package_ini_path, package_ini).with_context(|| {
         format!(

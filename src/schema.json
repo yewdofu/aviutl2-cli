@@ -257,6 +257,10 @@
           "type": "string",
           "description": "au2pkgでの情報欄（package.ini の `information` に相当、デフォルトは `{name} v{version}`）"
         },
+        "uninstall_subfolder_file": {
+          "type": "boolean",
+          "description": "アンインストール時に作成したフォルダ内の別ファイルを削除するかどうか（package.ini の `uninstallSubFolderFile` に相当、デフォルトは false）"
+        },
         "zip_name": {
           "type": "string",
           "description": "zip の名前（`.au2pkg.zip` は自動付与、デフォルトは `{id}-v{version}.au2pkg.zip`）"

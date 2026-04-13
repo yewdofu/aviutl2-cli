@@ -145,6 +145,8 @@ pub struct Release {
     pub package_name: String,
     #[serde(default = "Release::default_package_information")]
     pub package_information: String,
+    #[serde(default = "Release::uninstall_subfolder_file")]
+    pub uninstall_subfolder_file: bool,
     #[serde(default = "Release::default_zip_name")]
     pub zip_name: String,
     #[serde(default = "Release::default_profile")]
@@ -164,6 +166,7 @@ impl Default for Release {
             package_id: Self::default_package_id(),
             package_name: Self::default_package_name(),
             package_information: Self::default_package_information(),
+            uninstall_subfolder_file: Self::uninstall_subfolder_file(),
             zip_name: Self::default_zip_name(),
             profile: Self::default_profile(),
             include: None,
@@ -196,6 +199,10 @@ impl Release {
 
     pub fn default_profile() -> String {
         "release".to_string()
+    }
+
+    pub fn uninstall_subfolder_file() -> bool {
+        false
     }
 }
 

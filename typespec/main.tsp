@@ -156,6 +156,9 @@ model Release {
   /** au2pkgでの情報欄（package.ini の `information` に相当、デフォルトは `{name} v{version}`） */
   package_information?: string;
 
+  /** アンインストール時に作成したフォルダ内の別ファイルを削除するかどうか（package.ini の `uninstallSubFolderFile` に相当、デフォルトは false） */
+  uninstall_subfolder_file?: boolean;
+
   /** zip の名前（`.au2pkg.zip` は自動付与、デフォルトは `{id}-v{version}.au2pkg.zip`） */
   zip_name?: string;
 
