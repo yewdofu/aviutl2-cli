@@ -126,7 +126,7 @@ pub(crate) fn prepare_package_files(
             id={id}
             name={name}
             information={information}
-            uninstall_subfolder_file={uninstall_subfolder_file}
+            uninstallSubFolderFile={uninstall_subfolder_file}
             "#
         ),
         id = fill_template(id, project),
