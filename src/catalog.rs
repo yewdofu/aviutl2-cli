@@ -9,8 +9,8 @@ pub fn load_catalog_index(
     std::fs::create_dir_all(".aviutl2-cli")
         .context("カタログの保存ディレクトリの作成に失敗しました")?;
     let path = std::path::PathBuf::from(".aviutl2-cli/catalog-index.json");
-    if should_reload_catalog_index(&path, refresh) {
-        tracing::info!("カタログを再読み込みします: {}", path.display());
+    if !should_reload_catalog_index(&path, refresh) {
+        tracing::info!("カタログをキャッシュから読み込みます");
         let maybe_entries = fs::read_to_string(&path)
             .context("カタログの読み込みに失敗しました")
             .and_then(|content| {
@@ -26,7 +26,6 @@ pub fn load_catalog_index(
             }
         }
     }
-
     let entries = fetch_catalog_index()?;
     fs::write(path, serde_json::to_string(&entries)?).context("カタログの保存に失敗しました")?;
     Ok(entries)
@@ -40,9 +39,9 @@ fn should_reload_catalog_index(path: &std::path::Path, refresh: bool) -> bool {
         && let Ok(modified) = metadata.modified()
         && let Ok(elapsed) = modified.elapsed()
     {
-        return elapsed.as_secs() > 3600; // 1時間以上前に更新された場合は再読み込み
+        return elapsed.as_secs() < 3600; // 1時間以内に更新されているなら再読み込みしない
     }
-    false
+    true
 }
 
 fn fetch_catalog_index() -> anyhow::Result<std::collections::HashMap<String, CatalogIndexEntry>> {
