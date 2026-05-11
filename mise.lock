@@ -51,6 +51,7 @@ url = "https://github.com/pnpm/pnpm/releases/download/v11.0.9/pnpm-linux-arm64-m
 [tools.pnpm."platforms.linux-x64"]
 checksum = "sha256:ec84b7750ed24a47e55b71fba528499862bddaf8d9770b2f58a294b8692a8cbf"
 url = "https://github.com/pnpm/pnpm/releases/download/v11.0.9/pnpm-linux-x64.tar.gz"
+provenance = "github-attestations"
 
 [tools.pnpm."platforms.linux-x64-musl"]
 checksum = "sha256:964f716be77cab7cbd796a72bc2ec60703bccdfc8ac524fb3b5cbe7a105799b0"
