@@ -11,8 +11,28 @@ pub struct Cli {
     #[arg(short = 'C', long = "config-override", global = true)]
     pub config_override: Option<String>,
 
+    /// 色を無効にします
+    #[arg(long = "no-color", global = true)]
+    pub no_color: bool,
+
+    /// ログのスタイルを指定します
+    #[arg(long = "log-style", global = true, default_value = "original")]
+    pub log_style: LogStyle,
+
     #[command(subcommand)]
     pub command: Commands,
+}
+
+#[derive(Debug, Clone, clap::ValueEnum)]
+pub enum LogStyle {
+    /// aviutl2-cli独自のフォーマット
+    Original,
+    /// tracing_subscriberのデフォルト
+    Default,
+    /// tracing_subscriberのcompact
+    Compact,
+    /// tracing_subscriberのpretty
+    Pretty,
 }
 
 #[derive(Subcommand)]
